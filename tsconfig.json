@@ -19,5 +19,6 @@
       "@/*": ["shared/*"]
     }
   },
-  "include": ["plugins/**/*.ts", "plugins/**/*.tsx", "shared/**/*.ts", "shared/**/*.tsx"]
+  "include": ["plugins/**/*.ts", "plugins/**/*.tsx", "shared/**/*.ts", "shared/**/*.tsx"],
+  "exclude": ["plugins/*/vite.config.ts", "**/*.test.ts", "**/*.test.tsx"]
 }

@@ -5,7 +5,7 @@
 // real version/URL/integrity, and writes everything CI needs to upload —
 // renamed bundles, the filled manifests, and one aggregated catalog.json —
 // into `release-assets/`.
-import { readFileSync, writeFileSync, mkdirSync, readdirSync, copyFileSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdirSync, readdirSync, copyFileSync, existsSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import path from 'node:path';
 
@@ -19,11 +19,17 @@ const sha256 = (filePath) => createHash('sha256').update(readFileSync(filePath))
 
 mkdirSync('release-assets', { recursive: true });
 
-const PLUGINS = [
-  { id: 'redis-client', bin: 'devtool-svc-redis' },
-  { id: 'rabbit-client', bin: 'devtool-svc-rabbit' },
-  { id: 'container-manager', bin: 'devtool-svc-container' },
-];
+// Discovered from disk, not hardcoded — any `plugins/<id>/manifest.plugin.json`
+// is a plugin this script packages. `bin` (for the optional service half)
+// comes from that plugin's own manifest.service.json, when it has one — a
+// Tier-A-only plugin with no sidecar simply skips that half.
+const PLUGINS = readdirSync('plugins')
+  .filter((id) => existsSync(`plugins/${id}/manifest.plugin.json`))
+  .map((id) => {
+    const servicePath = `plugins/${id}/manifest.service.json`;
+    const bin = existsSync(servicePath) ? JSON.parse(readFileSync(servicePath, 'utf-8')).bin : null;
+    return { id, bin };
+  });
 
 // developer-desktop-utils's `current_target_triple()` (src-tauri/src/artifact_installer.rs)
 // only ever produces these six — anything else in `downloaded/sidecars` is ignored.
@@ -48,24 +54,31 @@ for (const { id, bin } of PLUGINS) {
   const pluginManifestAsset = `${id}-plugin.manifest.json`;
   writeFileSync(`release-assets/${pluginManifestAsset}`, JSON.stringify(pluginManifest, null, 2));
 
-  // --- kind: "service" (sidecar binary), one target per file found ---
-  const serviceManifest = JSON.parse(readFileSync(`${dir}/manifest.service.json`, 'utf-8'));
-  serviceManifest.version = version;
-  serviceManifest.targets = {};
-  for (const triple of TARGET_TRIPLES) {
-    const ext = triple.includes('windows') ? '.exe' : '';
-    const srcName = `${bin}-${triple}${ext}`;
-    const srcPath = `downloaded/sidecars/${srcName}`;
-    try {
-      readFileSync(srcPath);
-    } catch {
-      continue; // this release's matrix doesn't build every triple — see release.yml
+  // --- kind: "service" (sidecar binary), one target per file found — only
+  // when this plugin has one (Tier-A-only plugins don't). ---
+  let serviceManifestUrl = null;
+  let targets = [];
+  if (bin) {
+    const serviceManifest = JSON.parse(readFileSync(`${dir}/manifest.service.json`, 'utf-8'));
+    serviceManifest.version = version;
+    serviceManifest.targets = {};
+    for (const triple of TARGET_TRIPLES) {
+      const ext = triple.includes('windows') ? '.exe' : '';
+      const srcName = `${bin}-${triple}${ext}`;
+      const srcPath = `downloaded/sidecars/${srcName}`;
+      try {
+        readFileSync(srcPath);
+      } catch {
+        continue; // this release's matrix doesn't build every triple — see release.yml
+      }
+      copyFileSync(srcPath, `release-assets/${srcName}`);
+      serviceManifest.targets[triple] = { url: releaseUrl(srcName), sha256: sha256(srcPath) };
     }
-    copyFileSync(srcPath, `release-assets/${srcName}`);
-    serviceManifest.targets[triple] = { url: releaseUrl(srcName), sha256: sha256(srcPath) };
+    const serviceManifestAsset = `${id}-service.manifest.json`;
+    writeFileSync(`release-assets/${serviceManifestAsset}`, JSON.stringify(serviceManifest, null, 2));
+    serviceManifestUrl = releaseUrl(serviceManifestAsset);
+    targets = Object.keys(serviceManifest.targets);
   }
-  const serviceManifestAsset = `${id}-service.manifest.json`;
-  writeFileSync(`release-assets/${serviceManifestAsset}`, JSON.stringify(serviceManifest, null, 2));
 
   catalog.plugins.push({
     id,
@@ -75,8 +88,8 @@ for (const { id, bin } of PLUGINS) {
     keywords: pluginManifest.keywords,
     version,
     pluginManifestUrl: releaseUrl(pluginManifestAsset),
-    serviceManifestUrl: releaseUrl(serviceManifestAsset),
-    targets: Object.keys(serviceManifest.targets),
+    serviceManifestUrl,
+    targets,
   });
 }
 

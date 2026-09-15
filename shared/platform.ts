@@ -30,8 +30,8 @@ export function getPluginSdk(id: string): PluginSdk {
 export function usePluginState<T>(
   sdk: PluginSdk,
   key: string,
-  initial: T,
-  opts?: { debounceMs?: number },
+  initial: T | (() => T),
+  opts?: { debounceMs?: number; legacyKey?: string },
 ): [T, (value: T | ((prev: T) => T)) => void] {
   return window.__DEVTOOL_VENDOR__.platform.usePluginState(sdk, key, initial, opts);
 }

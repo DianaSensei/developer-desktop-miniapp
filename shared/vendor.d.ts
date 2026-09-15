@@ -24,9 +24,11 @@ export interface PluginSdk {
   files: Record<string, (...args: any[]) => any>;
   openExternal(url: string): Promise<void>;
   storage: {
-    get<T>(key: string, fallback: T): T;
-    set<T>(key: string, value: T): void;
+    get(key: string): string | null;
+    set(key: string, value: string): void;
     remove(key: string): void;
+    /** Full namespaced key — `usePersistentState`/`usePluginState` key off this. */
+    key(key: string): string;
   };
   secrets: Record<string, (...args: any[]) => any>;
   clipboard: {
@@ -44,8 +46,7 @@ export interface PluginSdk {
   };
   service: {
     call<T>(method: string, params?: unknown): Promise<T>;
-    streamStart<T>(method: string, params: unknown, onMessage: (msg: T) => void): Promise<string>;
-    streamStop(streamId: string): Promise<void>;
+    stream<T>(method: string, onMessage: (event: T) => void, params?: unknown): Promise<{ stop(): Promise<void> }>;
   };
   log(message: string, detail?: string): void;
 }
@@ -64,8 +65,8 @@ declare global {
         usePluginState<T>(
           sdk: PluginSdk,
           key: string,
-          initial: T,
-          opts?: { debounceMs?: number },
+          initial: T | (() => T),
+          opts?: { debounceMs?: number; legacyKey?: string },
         ): [T, (value: T | ((prev: T) => T)) => void];
         migrateLegacyKey(sdk: PluginSdk, key: string, legacyKey: string): void;
         usePluginConfig(): Record<string, any>;

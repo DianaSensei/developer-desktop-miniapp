@@ -47,15 +47,18 @@ export function makeFakeSdk(id: string): PluginSdk {
     files: {},
     async openExternal() {},
     storage: {
-      get<T>(key: string, fallback: T): T {
+      get(key: string): string | null {
         const s = storeFor(id);
-        return s.has(key) ? (s.get(key) as T) : fallback;
+        return s.has(key) ? (s.get(key) as string) : null;
       },
-      set<T>(key: string, value: T): void {
+      set(key: string, value: string): void {
         storeFor(id).set(key, value);
       },
       remove(key: string): void {
         storeFor(id).delete(key);
+      },
+      key(key: string): string {
+        return `devtool:${id}:${key}`;
       },
     },
     secrets: {},
@@ -84,10 +87,9 @@ export function makeFakeSdk(id: string): PluginSdk {
       call: () => {
         throw new Error('fakeSdk: service.call is not implemented — mock the plugin\'s own api layer instead');
       },
-      streamStart: () => {
-        throw new Error('fakeSdk: service.streamStart is not implemented — mock the plugin\'s own api layer instead');
+      stream: () => {
+        throw new Error('fakeSdk: service.stream is not implemented — mock the plugin\'s own api layer instead');
       },
-      streamStop: async () => {},
     },
     log() {},
   };

@@ -30,6 +30,9 @@ jobs:
           cache: npm
 
       - run: npm ci
+      - run: npm run lint:manifests
+      - run: npm run typecheck
+      - run: npm test
 
       - name: Build every plugin bundle
         run: npm run build
@@ -68,12 +71,20 @@ jobs:
             plugins/redis-client/sidecar -> target
             plugins/rabbit-client/sidecar -> target
             plugins/container-manager/sidecar -> target
+            plugins/kafka-explorer/sidecar -> target
 
+      # Discovers sidecars dynamically (any plugins/*/sidecar with a
+      # Cargo.toml) so adding a new plugin here never requires touching this
+      # workflow — the bin name comes from `[[bin]] name` in each crate's own
+      # Cargo.toml, which is also what `manifest.service.json`'s `bin` field
+      # must match (checked by `npm run lint:manifests`).
       - name: Build every sidecar
         shell: bash
         run: |
           set -euo pipefail
-          for dir in plugins/redis-client/sidecar plugins/rabbit-client/sidecar plugins/container-manager/sidecar; do
+          for dir in plugins/*/sidecar; do
+            [ -f "$dir/Cargo.toml" ] || continue
+            echo "== $dir =="
             (cd "$dir" && cargo build --release --target ${{ matrix.rust-target }})
           done
 
@@ -84,12 +95,9 @@ jobs:
           mkdir -p out
           EXT=""
           if [ "${{ runner.os }}" = "Windows" ]; then EXT=".exe"; fi
-          for bin in devtool-svc-redis devtool-svc-rabbit devtool-svc-container; do
-            case "$bin" in
-              devtool-svc-redis) dir=plugins/redis-client/sidecar ;;
-              devtool-svc-rabbit) dir=plugins/rabbit-client/sidecar ;;
-              devtool-svc-container) dir=plugins/container-manager/sidecar ;;
-            esac
+          for dir in plugins/*/sidecar; do
+            [ -f "$dir/Cargo.toml" ] || continue
+            bin=$(grep -m1 '^name = ' "$dir/Cargo.toml" | sed -E 's/name = "(.*)"/\1/')
             cp "$dir/target/${{ matrix.rust-target }}/release/${bin}${EXT}" \
                "out/${bin}-${{ matrix.rust-target }}${EXT}"
           done

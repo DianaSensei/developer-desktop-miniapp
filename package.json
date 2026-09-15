@@ -11,7 +11,7 @@
     "build:container-manager": "vite build --config plugins/container-manager/vite.config.ts",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "test": "vitest run",
-    "catalog": "node scripts/build-catalog.mjs"
+    "lint:manifests": "node scripts/lint-manifests.mjs"
   },
   "devDependencies": {
     "@testing-library/react": "^16.0.0",

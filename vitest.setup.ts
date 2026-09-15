@@ -26,14 +26,22 @@ window.__DEVTOOL_VENDOR__ = {
     },
     usePluginSdkFor: (id: string) => makeFakeSdk(id),
     getPluginSdk: (id: string) => makeFakeSdk(id),
-    usePluginState: <T,>(sdk: PluginSdk, key: string, initial: T) => {
-      const [value, setValue] = useState<T>(() => sdk.storage.get(key, initial));
+    usePluginState: <T,>(sdk: PluginSdk, key: string, initial: T | (() => T)) => {
+      const [value, setValue] = useState<T>(() => {
+        const raw = sdk.storage.get(key);
+        if (raw === null) return typeof initial === 'function' ? (initial as () => T)() : initial;
+        try {
+          return JSON.parse(raw) as T;
+        } catch {
+          return typeof initial === 'function' ? (initial as () => T)() : initial;
+        }
+      });
       return [
         value,
         (next: T | ((prev: T) => T)) => {
           setValue((prev) => {
             const resolved = typeof next === 'function' ? (next as (p: T) => T)(prev) : next;
-            sdk.storage.set(key, resolved);
+            sdk.storage.set(key, JSON.stringify(resolved));
             return resolved;
           });
         },
