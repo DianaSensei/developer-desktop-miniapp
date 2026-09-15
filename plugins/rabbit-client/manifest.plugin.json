@@ -8,17 +8,51 @@
   "label": "RabbitMQ",
   "description": "RabbitMQ management client: browse queues and exchanges, peek and publish messages, view bindings, connections, and cluster overview.",
   "icon": "send",
-  "keywords": ["rabbitmq", "rabbit", "amqp", "queue", "exchange", "message broker", "management", "vhost", "binding", "publish", "consume", "broker"],
+  "keywords": [
+    "rabbitmq",
+    "rabbit",
+    "amqp",
+    "queue",
+    "exchange",
+    "message broker",
+    "management",
+    "vhost",
+    "binding",
+    "publish",
+    "consume",
+    "broker"
+  ],
   "route": "/rabbit-client",
-  "permissions": ["storage", "clipboard:read", "clipboard:write", "native", "http", "service"],
-  "commands": ["mcp_respond"],
-  "hosts": ["*"],
+  "permissions": [
+    "storage",
+    "clipboard:read",
+    "clipboard:write",
+    "native",
+    "http",
+    "service"
+  ],
+  "commands": [
+    "mcp_"
+  ],
+  "hosts": [
+    "*"
+  ],
   "service": {
     "bin": "devtool-svc-rabbit",
     "methods": [
-      "list-configs", "save-config", "delete-config", "amqp-test", "rpc-call", "publish",
-      "consume-start", "consume-stop", "amqp-queues-info", "amqp-exchanges-info",
-      "amqp-declare-queue", "amqp-declare-exchange", "amqp-bind-queue"
+      "list-configs",
+      "save-config",
+      "delete-config",
+      "amqp-test",
+      "rpc-call",
+      "publish",
+      "consume-start",
+      "consume-stop",
+      "amqp-queues-info",
+      "amqp-exchanges-info",
+      "amqp-declare-queue",
+      "amqp-declare-exchange",
+      "amqp-bind-queue"
     ]
   }
 }
