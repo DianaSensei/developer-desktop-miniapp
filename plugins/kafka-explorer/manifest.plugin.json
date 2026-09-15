@@ -1,0 +1,25 @@
+{
+  "kind": "plugin",
+  "id": "kafka-explorer",
+  "version": "0.0.0",
+  "sdk": "^1.0.0",
+  "entry": "REPLACED_BY_CI",
+  "integrity": "REPLACED_BY_CI",
+  "label": "Kafka Explorer",
+  "description": "Browse topics, inspect partitions and offsets, manage consumer groups, and produce messages.",
+  "icon": "server",
+  "keywords": ["kafka", "topic", "partition", "offset", "consumer group", "producer", "message", "broker", "stream"],
+  "route": "/kafka-explorer",
+  "permissions": ["storage", "clipboard:read", "clipboard:write", "native", "service"],
+  "commands": ["mcp_"],
+  "hosts": [],
+  "service": {
+    "bin": "devtool-svc-kafka",
+    "methods": [
+      "list-configs", "save-config", "delete-config", "test-connection", "list-topics",
+      "topic-details", "topic-consumer-groups", "topic-configs", "create-topic", "delete-topic",
+      "list-groups", "group-details", "produce", "produce-batch", "fetch-messages",
+      "consume-start", "consume-stop"
+    ]
+  }
+}

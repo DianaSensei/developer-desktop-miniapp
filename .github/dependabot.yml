@@ -42,6 +42,15 @@ updates:
       minor-and-patch:
         update-types: [minor, patch]
 
+  - package-ecosystem: cargo
+    directory: /plugins/kafka-explorer/sidecar
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      minor-and-patch:
+        update-types: [minor, patch]
+
   # Moved from developer-desktop-utils along with the RabbitMQ plugin — see
   # that repo's docs/decisions/architecture/platform-plugin-architecture.md.
   - package-ecosystem: maven
@@ -55,6 +64,12 @@ updates:
 
   - package-ecosystem: pip
     directory: /plugins/rabbit-client/testing
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+
+  - package-ecosystem: pip
+    directory: /plugins/kafka-explorer/testing
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
