@@ -1,0 +1,30 @@
+import * as React from 'react';
+import { cn } from '@/lib/utils';
+
+export interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {}
+
+const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
+  ({ className, ...props }, ref) => {
+    return (
+      <textarea
+        // Disable macOS/WebKit smart-quote, autocorrect, and autocapitalize
+        // substitutions by default so a typed " stays a straight ASCII quote
+        // (curly quotes break JSON/code). Overridable via props (prose tools
+        // re-enable spellCheck); these attributes are no-ops on Windows/Linux.
+        spellCheck={false}
+        autoCorrect="off"
+        autoCapitalize="off"
+        className={cn(
+          // Cùng lý do với Input: viền `--line`, nền `--card`. Xem ui/input.tsx.
+          'flex min-h-[80px] w-full rounded-sm border border-line bg-card px-3 py-2 text-sm transition-[color,border-color,box-shadow] duration-fast ease-out-soft placeholder:text-fg-mute/75 hover:border-line-strong focus-visible:outline-hidden focus-visible:border-acc/60 focus-visible:ring-[3px] focus-visible:ring-focus disabled:cursor-not-allowed disabled:opacity-50',
+          className
+        )}
+        ref={ref}
+        {...props}
+      />
+    );
+  }
+);
+Textarea.displayName = 'Textarea';
+
+export { Textarea };

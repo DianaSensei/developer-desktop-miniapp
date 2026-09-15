@@ -1,0 +1,7 @@
+{
+  "kind": "service",
+  "bin": "devtool-svc-redis",
+  "version": "0.0.0",
+  "protocol": 1,
+  "targets": {}
+}

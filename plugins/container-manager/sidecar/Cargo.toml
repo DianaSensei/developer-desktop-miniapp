@@ -1,0 +1,41 @@
+[package]
+name = "devtool-svc-container"
+version = "0.1.0"
+edition = "2021"
+publish = false
+description = "DevTool Tier-B sidecar for the Container Manager plugin — JSONL over stdio, see docs/plugin-sdk/04-tier-b-sidecars.md in developer-desktop-utils."
+
+[[bin]]
+name = "devtool-svc-container"
+path = "src/main.rs"
+
+[dependencies]
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+tokio = { version = "1", features = ["full"] }
+uuid = { version = "1", features = ["v4"] }
+futures-util = "0.3"
+# Docker Engine API client (async, over Unix socket / Windows named pipe).
+# Talks to any daemon exposing a docker-compatible socket: Docker Desktop,
+# Colima (docker runtime), Rancher Desktop (moby), OrbStack, Podman (docker-compat).
+bollard = "0.21"
+
+[target.'cfg(unix)'.dependencies]
+# Direct handles onto crates bollard already pulls in transitively (its own
+# "pipe" feature depends on exactly these, at these versions — see
+# `volume_sizes` in src/main.rs) so we can issue one raw request over the
+# same Unix socket `bollard::Docker` connects with. Needed because bollard's
+# typed `SystemDataUsageResponse` model (this version) only exposes the
+# aggregate df counters, not the per-volume `UsageData.Size` the raw JSON
+# response actually carries.
+hyperlocal = "0.9"
+hyper = "1"
+hyper-util = { version = "0.1", features = ["client-legacy", "tokio"] }
+http-body-util = "0.1"
+bytes = "1"
+
+[profile.release]
+opt-level = "z"
+lto = "thin"
+strip = true
+panic = "abort"

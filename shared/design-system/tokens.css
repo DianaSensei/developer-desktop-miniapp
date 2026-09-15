@@ -1,0 +1,333 @@
+/* ============================================================================
+   DevTool — lớp app của design system
+   ----------------------------------------------------------------------------
+   Giá trị KHÔNG nằm ở đây. Nguồn sự thật là `design/tokens.css` (CSS thuần,
+   dùng chung với trang mẫu `design/preview/index.html`). File này chỉ làm hai việc:
+
+     1. @import kit
+     2. Base reset + utility cần Tailwind xử lý (@layer / @apply)
+
+   Muốn đổi màu, bo góc, chiều cao control → sửa `design/tokens.css`, không sửa đây.
+
+   Cách dùng ở dự án khác: xem `design/README.md`.
+   ========================================================================== */
+
+@import "../../design/tokens.css";
+
+@layer base {
+  /* ── Bảng màu cú pháp editor ────────────────────────────────────────────
+     Hệ RIÊNG, không thuộc kit và không theo accent: màu token trong SQL/JS
+     mang nghĩa cú pháp, đổi tone không được làm keyword đổi màu. Giữ nguyên. */
+  :root {
+    --sql-keyword: hsl(216 90% 46%);
+    --sql-string: hsl(130 50% 35%);
+    --sql-comment: hsl(0 0% 50%);
+    --sql-number: hsl(25 90% 42%);
+    --sql-operator: hsl(0 0% 45%);
+    --sql-function: hsl(185 75% 33%);
+    --sql-type: hsl(270 55% 45%);
+    --js-property: hsl(32 90% 44%);
+    --js-method: hsl(270 60% 52%);
+    /* JSON tree view (JsonFormatter) — chuỗi/số/boolean tái dùng đúng hue của
+       SQL cho cùng khái niệm (chuỗi vẫn xanh lá, số vẫn cam, kiểu vẫn tím ở
+       mọi nơi trong app); chỉ key và null cần hue riêng vì SQL không có gì
+       tương đương. */
+    --json-key: hsl(202 88% 38%);
+    --json-null: hsl(350 68% 46%);
+
+    /* ── Màu HTTP method ─────────────────────────────────────────────────
+       Cùng loại với màu cú pháp: QUY ƯỚC NGÀNH, không phải trang trí.
+       Postman, Insomnia, Bruno đều dùng xanh-GET / cam-POST / đỏ-DELETE;
+       đổi đi là bắt người dùng học lại một thứ họ đã biết.
+
+       Đây là ngoại lệ DUY NHẤT được phép trùng hue với --ok/--bad. Lý do
+       chấp nhận được: method nằm ở cột bên trái mỗi request, còn status
+       code nằm ở panel kết quả — chúng không bao giờ đứng cạnh nhau trên
+       cùng một dòng để bị đọc nhầm thành một tín hiệu. Đừng nới ngoại lệ
+       này ra chỗ khác.
+
+       Dạng kênh vì badge cần nền có alpha. */
+    --method-get-c:    152 55% 34%;
+    --method-post-c:    32 85% 40%;
+    --method-put-c:    214 80% 46%;
+    --method-patch-c:  272 60% 50%;
+    --method-delete-c:   2 65% 46%;
+
+    --method-get:    hsl(var(--method-get-c));
+    --method-post:   hsl(var(--method-post-c));
+    --method-put:    hsl(var(--method-put-c));
+    --method-patch:  hsl(var(--method-patch-c));
+    --method-delete: hsl(var(--method-delete-c));
+
+    /* ── "Đang ghi / đang chạy" ──────────────────────────────────────────
+       Cũng là quy ước: nút ghi, badge live, vạch giờ hiện tại đều đỏ ở mọi
+       phần mềm. KHÔNG dùng --bad cho việc này — nếu dùng, đồng hồ đang chạy
+       và một lỗi thật sẽ cùng màu, và đỏ mất nghĩa "có gì đó sai".
+       Hơi ngả cam so với --bad để phân biệt được khi đứng gần nhau. */
+    --live-c: 8 78% 50%;
+    --live: hsl(var(--live-c));
+  }
+
+  .dark {
+    --sql-keyword: hsl(214 100% 74%);
+    --sql-string: hsl(130 55% 60%);
+    --sql-comment: hsl(0 0% 50%);
+    --sql-number: hsl(25 90% 65%);
+    --sql-operator: hsl(0 0% 60%);
+    --sql-function: hsl(185 70% 60%);
+    --sql-type: hsl(270 60% 72%);
+    --js-property: hsl(32 90% 66%);
+    --js-method: hsl(270 65% 75%);
+    --json-key: hsl(202 85% 68%);
+    --json-null: hsl(350 75% 72%);
+
+    /* Chỉ định nghĩa lại KÊNH — bản bọc hsl() ở :root tự đúng theo. */
+    --method-get-c:    150 48% 58%;
+    --method-post-c:    34 78% 62%;
+    --method-put-c:    212 82% 68%;
+    --method-patch-c:  272 62% 72%;
+    --method-delete-c:   4 70% 68%;
+    --live-c:            8 82% 62%;
+  }
+
+  ::selection {
+    @apply bg-acc/20;
+  }
+
+  /* Controlled light/dark color swap — added to <html> only during a toggle,
+     never on first paint, and excluded from layout properties so nothing
+     reflows. Neutralized under reduce-motion (handled in design/tokens.css). */
+  .theme-transition,
+  .theme-transition *,
+  .theme-transition *::before,
+  .theme-transition *::after {
+    transition: background-color var(--dur-base) var(--ease-out-soft),
+      border-color var(--dur-base) var(--ease-out-soft),
+      color var(--dur-base) var(--ease-out-soft),
+      fill var(--dur-base) var(--ease-out-soft),
+      stroke var(--dur-base) var(--ease-out-soft),
+      box-shadow var(--dur-base) var(--ease-out-soft) !important;
+  }
+
+  /* ── Cross-platform custom scrollbar ───────────────────────────────────
+     One consistent scrollbar across macOS (WKWebView), Windows (WebView2),
+     and Linux (WebKitGTK). */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--fg-mute-c) / 0.4) transparent;
+  }
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background-color: hsl(var(--fg-mute-c) / 0.35);
+    border-radius: 9999px;
+    border: 3px solid transparent;
+    background-clip: padding-box;
+    min-height: 40px;
+    min-width: 40px;
+    transition: background-color var(--dur-base) var(--ease-out-soft),
+      box-shadow var(--dur-base) var(--ease-out-soft);
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background-color: hsl(var(--fg-mute-c) / 0.55);
+  }
+  ::-webkit-scrollbar-thumb:active {
+    background-color: hsl(var(--fg-mute-c) / 0.75);
+  }
+  ::-webkit-scrollbar-button {
+    display: none;
+  }
+  ::-webkit-scrollbar-corner {
+    background: transparent;
+  }
+}
+
+@layer utilities {
+  /* ── Scrollbar helper ──────────────────────────────────────────────── */
+  .no-scrollbar {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* `.shadow-primary` / `.shadow-primary-lg` (quầng sáng ngả accent dưới hành
+     động chính) đã BỊ XOÁ. Hai lý do, cả hai đều là luật đã có sẵn:
+
+     1. `design/RULES.md` — "không hover-lift, không glow". Đó là một quầng sáng
+        MÀU, và nó phình từ 8px lên 20px khi rê chuột. Nút chuẩn của kit
+        (`design/preview/standalone.html`, `.btn.solid`) chỉ có `--sh-sm` và khi
+        hover thì đổi nền sang `--acc-hi`, không đụng tới bóng.
+
+     2. `design/RULES.md` — "hai hệ shadow song song". Hai utility này ghi THẲNG
+        `box-shadow`, trong khi `shadow-soft` và mọi `ring-*` của Tailwind ghi
+        qua chuỗi biến `--tw-shadow` / `--tw-ring-shadow`. Cùng thuộc tính, cùng
+        độ cụ thể, nên thứ tự trong bundle quyết định chứ không phải ý đồ: vòng
+        focus xoá sạch cái bóng, hoặc ngược lại, tuỳ tổ hợp. Xem ghi chú đầy đủ
+        trong `ui/button.tsx`.
+
+     Cần nhấn mạnh hành động chính thì dùng NỀN ĐẶC màu accent — nó đã là thứ
+     nổi nhất trên màn rồi. */
+
+  /* ── Micro-interaction ────────────────────────────────────────────────
+     Rê chuột đổi NỀN/VIỀN, không đổi VỊ TRÍ — `design/RULES.md`. Bản cũ của
+     .hover-elevate dịch phần tử lên 2px khi rê; đã bỏ vì nó làm layout nhảy
+     dưới con trỏ. */
+  .hover-elevate {
+    @apply transition-[box-shadow,border-color,background-color] duration-base ease-out-soft
+           hover:shadow hover:border-line
+           active:shadow-sm;
+  }
+  /* Lún khi nhấn cho các control tự dựng (thẻ, hàng danh sách bấm được) —
+     `Button`/`IconButton` đã có sẵn bên trong. Nhấn trong `--dur-press`, nhả
+     trong `--dur-fast`: nhanh xuống, thong thả lên. Xem luật 3 trong
+     `design/tokens.css`. */
+  .press {
+    @apply transition-transform duration-fast ease-out-soft
+           motion-safe:active:scale-[0.97] motion-safe:active:duration-press;
+  }
+  /* Vào của một khối nội dung. 340ms + 10px là quãng của một BỀ MẶT LỚN; dùng
+     cho một thẻ hay một hàng thì nó lê thê, nên hạ về nhịp `--dur-base` và
+     6px. Quãng đường ngắn hơn cũng có nghĩa là nội dung bên dưới bớt bị đẩy. */
+  .animate-fade-in-up {
+    animation: fadeInUp var(--dur-base) var(--ease-out-soft);
+  }
+  .animate-scale-in {
+    animation: scaleIn var(--dur-base) var(--ease-out-soft);
+  }
+  /* Vào theo tầng cho danh sách. Mắt đọc ra một luồng thay vì tám thứ nảy lên
+     cùng lúc; 40ms/mục và chốt ở mục thứ 8 — quá 8 thì mục cuối chờ lâu đến
+     mức đọc ra là app chậm, chứ không phải app mượt. */
+  .stagger-in > * {
+    animation: fadeInUp var(--dur-base) var(--ease-out-soft) backwards;
+  }
+  .stagger-in > *:nth-child(1) { animation-delay: 0ms; }
+  .stagger-in > *:nth-child(2) { animation-delay: 40ms; }
+  .stagger-in > *:nth-child(3) { animation-delay: 80ms; }
+  .stagger-in > *:nth-child(4) { animation-delay: 120ms; }
+  .stagger-in > *:nth-child(5) { animation-delay: 160ms; }
+  .stagger-in > *:nth-child(6) { animation-delay: 200ms; }
+  .stagger-in > *:nth-child(7) { animation-delay: 240ms; }
+  .stagger-in > *:nth-child(n + 8) { animation-delay: 280ms; }
+  @keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes scaleIn {
+    from { opacity: 0; transform: scale(0.96); }
+    to { opacity: 1; transform: scale(1); }
+  }
+
+  /* ── Typography ───────────────────────────────────────────────────── */
+  .heading-xl { @apply text-xl font-semibold leading-tight tracking-tight; }
+  .heading-lg { @apply text-lg font-semibold leading-snug tracking-tight; }
+  .heading-md { @apply text-base font-semibold leading-relaxed tracking-tight; }
+  .heading-sm { @apply text-sm font-semibold leading-relaxed; }
+  .heading-xs { @apply text-xs font-semibold uppercase tracking-wider text-fg-mute; }
+  .text-body { @apply text-sm leading-relaxed; }
+  .text-caption { @apply text-xs leading-relaxed text-fg-mute; }
+
+  /* ── App chrome ───────────────────────────────────────────────────── */
+  /* ── Vì sao chrome KHÔNG còn là kính mờ ───────────────────────────────
+     Cũ: `glass-chrome` = nền `--chrome` ở 86% độ đục + `backdrop-blur(26px)
+     saturate(185%)`, viền `--line/70`.
+
+     Ba vấn đề, và cái thứ nhất là gốc:
+
+     1. KHÔNG CÓ GÌ Ở PHÍA SAU ĐỂ NHÌN XUYÊN QUA. `.env-bg` (nền gradient) chỉ
+        dùng ở trang mẫu, không dùng trong app — sidebar và header nằm thẳng
+        trên `--bg` phẳng. Nên 26px blur mỗi khung hình chỉ để trộn `--chrome`
+        với `--bg` ra một tông lưng chừng. Trả giá đúng bằng một hiệu ứng mà
+        không ai nhìn thấy.
+     2. `saturate(185%)` kéo lệch sắc mọi thứ NẰM DƯỚI dải chrome khi cuộn qua.
+     3. Viền ở 70% độ đục trên `--line` (88%) ra ≈ 91.6% — gần như biến mất.
+        Đó chính là "cái khung mong manh": vùng nào ra vùng đó không còn ranh
+        giới nào nói lên.
+
+     Mới: bề mặt ĐẶC, viền đủ mạnh. Đây là mô hình của IDE (VS Code, DBX):
+     chrome tối hơn vùng làm việc một bậc, ngăn bằng một đường 1px thật.
+     Kính mờ vẫn giữ cho bề mặt BAY (dialog, menu, tooltip) — ở đó mới thật
+     sự có nội dung phía sau để nhìn xuyên qua. */
+  .sidebar-chrome {
+    @apply bg-chrome border-r border-line;
+  }
+  .header-chrome {
+    @apply bg-chrome border-b border-line;
+  }
+  .content-wrapper {
+    @apply mx-auto w-full max-w-7xl;
+  }
+}
+
+/* ── Reduce motion (chốt chặn toàn cục) ──────────────────────────────────────
+   `design-system/README.md` hứa "mọi animation biến đổi transform đều nằm sau
+   `motion-safe:` và một chốt chặn `prefers-reduced-motion` toàn cục". Phần
+   `motion-safe:` thì các call site đã làm; chốt chặn toàn cục thì trước đây
+   không tồn tại — nên các animation Radix gắn sẵn trong `ui/dialog.tsx`,
+   `dropdown-menu.tsx`, `context-menu.tsx` (zoom-in-95, slide-in-from-*) vẫn
+   chạy đủ với người đã bật giảm chuyển động trong hệ điều hành. Đây là chốt đó.
+
+   Nằm ngoài `@layer` để không bị Tailwind sắp xếp lại thứ tự, và dùng
+   `!important` vì phải thắng cả utility lẫn style inline.
+
+   Hai ngoại lệ được giữ nguyên bên dưới: chúng là CHỈ BÁO TRẠNG THÁI, không
+   phải trang trí — đứng im thì mất luôn thông tin (xem ghi chú đầu
+   `ui/spinner.tsx`). */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-delay: 0ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    transition-delay: 0ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  /* Spinner "đang bận" và chấm nhịp của kết nối live vẫn phải nhúc nhích. */
+  .animate-spin {
+    animation-duration: 1s !important;
+    animation-iteration-count: infinite !important;
+  }
+  .animate-pulse {
+    animation-duration: 2s !important;
+    animation-iteration-count: infinite !important;
+  }
+}
+
+/* ── Glass surfaces (Apple-style frosted, kept legible) ─────────────────
+   Heavy blur + saturation, high fill opacity so content stays crisp.
+   -webkit- + standard prefixes for all three Tauri webviews.
+
+   Declared with `@utility` rather than as plain classes inside
+   `@layer utilities`: Tailwind 4's `@apply` only accepts utilities the engine
+   knows about, and `.sidebar-chrome` / `.header-chrome` below compose
+   `glass-chrome` and `glass-sheen` that way. `@utility` registers them so the
+   composition keeps working from a single definition, instead of the
+   declarations being duplicated into each consumer. */
+@utility glass {
+  background-color: hsl(var(--card-c) / 0.80);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  backdrop-filter: blur(24px) saturate(180%);
+}
+@utility glass-strong {
+  background-color: hsl(var(--card-c) / 0.90);
+  -webkit-backdrop-filter: blur(30px) saturate(190%);
+  backdrop-filter: blur(30px) saturate(190%);
+}
+@utility glass-chrome {
+  background-color: hsl(var(--chrome-c) / 0.86);
+  -webkit-backdrop-filter: blur(26px) saturate(185%);
+  backdrop-filter: blur(26px) saturate(185%);
+}
+@utility glass-sheen {
+  box-shadow: inset 0 1px 0 0 hsl(0 0% 100% / 0.14),
+              inset 0 -1px 0 0 hsl(0 0% 0% / 0.04);
+}
