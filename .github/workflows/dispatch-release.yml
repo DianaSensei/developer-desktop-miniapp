@@ -27,8 +27,8 @@ on:
           # scripts/create-plugin.mjs inserts new plugin ids above this
           # line automatically. Added a plugin branch some other way?
           # Add its id here by hand.
-      version:
-        description: 'Release tag to create (e.g. redis-client-v1.0.2) — must start with "<plugin>-v"'
+      version_number:
+        description: 'Version number only, e.g. 1.0.2 — the plugin id above is prepended for you (becomes <plugin>-v<this>)'
         required: true
         type: string
 
@@ -39,24 +39,25 @@ jobs:
   dispatch:
     runs-on: ubuntu-latest
     steps:
-      - name: Validate version matches the chosen plugin
+      - name: Build the full tag and validate it
+        id: tag
         run: |
           set -euo pipefail
-          case "${{ inputs.version }}" in
-            "${{ inputs.plugin }}-v"*) ;;
-            *)
-              echo "::error::version '${{ inputs.version }}' must start with '${{ inputs.plugin }}-v'"
-              exit 1
-              ;;
-          esac
+          version_number="${{ inputs.version_number }}"
+          if [[ ! "$version_number" =~ ^[0-9]+\.[0-9]+\.[0-9]+([+-][0-9A-Za-z.-]+)?$ ]]; then
+            echo "::error::'$version_number' doesn't look like a version number (expected e.g. 1.0.2) — don't include the plugin id or a leading 'v', those are added for you."
+            exit 1
+          fi
+          echo "value=${{ inputs.plugin }}-v$version_number" >> "$GITHUB_OUTPUT"
 
       - name: Trigger release.yml on app/${{ inputs.plugin }}/main
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG: ${{ steps.tag.outputs.value }}
         run: |
           set -euo pipefail
           gh api "repos/${{ github.repository }}/actions/workflows/release.yml/dispatches" \
             -f "ref=app/${{ inputs.plugin }}/main" \
-            -f "inputs[version]=${{ inputs.version }}"
-          echo "Triggered release.yml on app/${{ inputs.plugin }}/main with version ${{ inputs.version }}"
+            -f "inputs[version]=${RELEASE_TAG}"
+          echo "Triggered release.yml on app/${{ inputs.plugin }}/main with tag ${RELEASE_TAG}"
           echo "Watch it at: https://github.com/${{ github.repository }}/actions/workflows/release.yml?query=branch%3Aapp%2F${{ inputs.plugin }}%2Fmain"
