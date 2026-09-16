@@ -1,0 +1,62 @@
+name: Dispatch plugin release
+
+# Lives on `main` so the "Run workflow" button actually shows up in the
+# Actions UI — GitHub only renders that button for workflow files that
+# exist on the repo's DEFAULT branch. Each plugin's own release.yml lives
+# only on its app/<id>/main branch (main is the skeleton, it has no
+# release.yml of its own), so without this dispatcher there's no button to
+# click at all for any of them — see README.md.
+#
+# This job doesn't build or release anything itself: it just fires
+# workflow_dispatch on the chosen plugin branch's own release.yml via the
+# GitHub API, using this run's own GITHUB_TOKEN (actions: write is enough
+# to trigger a workflow_dispatch run in the SAME repo — no extra secret
+# needed).
+on:
+  workflow_dispatch:
+    inputs:
+      plugin:
+        description: 'Which plugin to release'
+        required: true
+        type: choice
+        options:
+          - redis-client
+          - rabbit-client
+          - container-manager
+          - kafka-explorer
+          # scripts/create-plugin.mjs inserts new plugin ids above this
+          # line automatically. Added a plugin branch some other way?
+          # Add its id here by hand.
+      version:
+        description: 'Release tag to create (e.g. redis-client-v1.0.2) — must start with "<plugin>-v"'
+        required: true
+        type: string
+
+permissions:
+  actions: write
+
+jobs:
+  dispatch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate version matches the chosen plugin
+        run: |
+          set -euo pipefail
+          case "${{ inputs.version }}" in
+            "${{ inputs.plugin }}-v"*) ;;
+            *)
+              echo "::error::version '${{ inputs.version }}' must start with '${{ inputs.plugin }}-v'"
+              exit 1
+              ;;
+          esac
+
+      - name: Trigger release.yml on app/${{ inputs.plugin }}/main
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          gh api "repos/${{ github.repository }}/actions/workflows/release.yml/dispatches" \
+            -f "ref=app/${{ inputs.plugin }}/main" \
+            -f "inputs[version]=${{ inputs.version }}"
+          echo "Triggered release.yml on app/${{ inputs.plugin }}/main with version ${{ inputs.version }}"
+          echo "Watch it at: https://github.com/${{ github.repository }}/actions/workflows/release.yml?query=branch%3Aapp%2F${{ inputs.plugin }}%2Fmain"

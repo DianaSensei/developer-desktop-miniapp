@@ -626,9 +626,25 @@ const cargoBlock = sidecar
   : '';
 dependabot = dependabot.replace(/\n$/, '') + '\n' + npmBlock + cargoBlock;
 writeFileSync('.github/dependabot.yml', dependabot);
-
 git(['add', '.github/dependabot.yml']);
-git(['commit', '-m', `dependabot: add ${newBranch} entries`]);
+
+// ── dispatch-release.yml's dropdown also lives on main — add this plugin
+// to it so "Run workflow" can target it, same reasoning as dependabot.yml
+// above (this file needs to exist on the default branch for GitHub to show
+// the manual-dispatch button at all; see that file's own header comment).
+const dispatchPath = '.github/workflows/dispatch-release.yml';
+if (existsSync(dispatchPath)) {
+  const marker = '          # scripts/create-plugin.mjs inserts new plugin ids above this';
+  let dispatch = readFileSync(dispatchPath, 'utf-8');
+  if (dispatch.includes(marker) && !dispatch.includes(`          - ${id}\n`)) {
+    dispatch = dispatch.replace(marker, `          - ${id}\n${marker}`);
+    writeFileSync(dispatchPath, dispatch);
+    git(['add', dispatchPath]);
+    console.log(`Added ${id} to dispatch-release.yml's plugin dropdown.`);
+  }
+}
+
+git(['commit', '-m', `dependabot + dispatcher: add ${newBranch}`]);
 
 console.log(`\nSwitching back to ${newBranch}...`);
 git(['checkout', newBranch]);
