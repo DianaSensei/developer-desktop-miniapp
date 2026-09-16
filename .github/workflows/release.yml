@@ -158,3 +158,21 @@ jobs:
             --notes "Automated build of every plugin/sidecar in this repo. See catalog.json for the full list." \
             --target "${{ github.sha }}" \
             release-assets/*
+
+      # Release assets are served from a storage host that never sends
+      # Access-Control-Allow-Origin, so a browser fetch() of catalog.json
+      # (starlight-site's /plugins page) fails CORS silently — the page's
+      # error handler then leaves every button in its disabled "loading"
+      # state forever. raw.githubusercontent.com does send that header, so
+      # also commit catalog.json straight into the repo and have the site
+      # read it from there instead of from the release asset.
+      - name: Commit catalog.json to the repo (raw.githubusercontent.com serves it with CORS)
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          cp release-assets/catalog.json catalog.json
+          git add catalog.json
+          git diff --cached --quiet && exit 0
+          git commit -m "Update catalog.json for ${RELEASE_TAG}"
+          git push origin HEAD:${{ github.event.repository.default_branch }}
