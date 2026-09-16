@@ -14,10 +14,9 @@
     "isolatedModules": true,
     "noEmit": true,
     "paths": {
-      "@/components/tools/container/*": ["./plugins/container-manager/ui/*"],
       "@/*": ["./shared/*"]
     }
   },
-  "include": ["plugins/**/*.ts", "plugins/**/*.tsx", "shared/**/*.ts", "shared/**/*.tsx"],
-  "exclude": ["plugins/*/vite.config.ts", "**/*.test.ts", "**/*.test.tsx"]
+  "include": ["shared/**/*.ts", "shared/**/*.tsx"],
+  "exclude": ["**/*.test.ts", "**/*.test.tsx"]
 }

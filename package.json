@@ -3,16 +3,10 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "description": "Optional DevTool plugins (Redis, RabbitMQ, Container Manager, Kafka Explorer), installable at runtime from developer-desktop-utils's Settings → Extensions instead of being compiled into the app.",
+  "description": "SKELETON for DevTool plugins — shared/ (vendored UI kit + lib utilities) and scripts/ that every app/<id>/main plugin branch builds on top of. No plugins/ directory lives on this branch; see README.md.",
   "scripts": {
-    "build": "npm run build:redis-client && npm run build:rabbit-client && npm run build:container-manager && npm run build:kafka-explorer",
-    "build:redis-client": "vite build --config plugins/redis-client/vite.config.ts",
-    "build:rabbit-client": "vite build --config plugins/rabbit-client/vite.config.ts",
-    "build:container-manager": "vite build --config plugins/container-manager/vite.config.ts",
-    "build:kafka-explorer": "vite build --config plugins/kafka-explorer/vite.config.ts",
     "typecheck": "tsc --noEmit -p tsconfig.json",
-    "test": "vitest run",
-    "lint:manifests": "node scripts/lint-manifests.mjs"
+    "test": "vitest run"
   },
   "devDependencies": {
     "@testing-library/react": "^16.0.0",

@@ -1,5 +1,13 @@
 version: 2
+
+# This file is only ever read from the repo's DEFAULT branch (main, the
+# skeleton) — each entry below that targets a plugin (`target-branch:
+# app/<id>/main`) still works because Dependabot resolves `directory`
+# relative to that target branch, not to main. main has no plugins/ dir, so
+# only its own npm/github-actions entries (no target-branch) actually touch
+# main's own tree.
 updates:
+  # main's own skeleton deps (shared/ + tooling).
   - package-ecosystem: npm
     directory: /
     schedule:
@@ -15,35 +23,55 @@ updates:
       interval: weekly
     open-pull-requests-limit: 5
 
-  - package-ecosystem: cargo
-    directory: /plugins/redis-client/sidecar
+  # ── redis-client (app/redis-client/main) ──────────────────────────────
+  - package-ecosystem: npm
+    directory: /
+    target-branch: app/redis-client/main
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
     groups:
       minor-and-patch:
         update-types: [minor, patch]
+
+  - package-ecosystem: github-actions
+    directory: /
+    target-branch: app/redis-client/main
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+
+  - package-ecosystem: cargo
+    directory: /plugins/redis-client/sidecar
+    target-branch: app/redis-client/main
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      minor-and-patch:
+        update-types: [minor, patch]
+
+  # ── rabbit-client (app/rabbit-client/main) ────────────────────────────
+  - package-ecosystem: npm
+    directory: /
+    target-branch: app/rabbit-client/main
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      minor-and-patch:
+        update-types: [minor, patch]
+
+  - package-ecosystem: github-actions
+    directory: /
+    target-branch: app/rabbit-client/main
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
 
   - package-ecosystem: cargo
     directory: /plugins/rabbit-client/sidecar
-    schedule:
-      interval: weekly
-    open-pull-requests-limit: 5
-    groups:
-      minor-and-patch:
-        update-types: [minor, patch]
-
-  - package-ecosystem: cargo
-    directory: /plugins/container-manager/sidecar
-    schedule:
-      interval: weekly
-    open-pull-requests-limit: 5
-    groups:
-      minor-and-patch:
-        update-types: [minor, patch]
-
-  - package-ecosystem: cargo
-    directory: /plugins/kafka-explorer/sidecar
+    target-branch: app/rabbit-client/main
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
@@ -55,6 +83,7 @@ updates:
   # that repo's docs/decisions/architecture/platform-plugin-architecture.md.
   - package-ecosystem: maven
     directory: /plugins/rabbit-client/testing/spring-rpc
+    target-branch: app/rabbit-client/main
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
@@ -64,12 +93,70 @@ updates:
 
   - package-ecosystem: pip
     directory: /plugins/rabbit-client/testing
+    target-branch: app/rabbit-client/main
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
 
+  # ── container-manager (app/container-manager/main) ────────────────────
+  - package-ecosystem: npm
+    directory: /
+    target-branch: app/container-manager/main
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      minor-and-patch:
+        update-types: [minor, patch]
+
+  - package-ecosystem: github-actions
+    directory: /
+    target-branch: app/container-manager/main
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+
+  - package-ecosystem: cargo
+    directory: /plugins/container-manager/sidecar
+    target-branch: app/container-manager/main
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      minor-and-patch:
+        update-types: [minor, patch]
+
+  # ── kafka-explorer (app/kafka-explorer/main) ──────────────────────────
+  - package-ecosystem: npm
+    directory: /
+    target-branch: app/kafka-explorer/main
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      minor-and-patch:
+        update-types: [minor, patch]
+
+  - package-ecosystem: github-actions
+    directory: /
+    target-branch: app/kafka-explorer/main
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+
+  - package-ecosystem: cargo
+    directory: /plugins/kafka-explorer/sidecar
+    target-branch: app/kafka-explorer/main
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      minor-and-patch:
+        update-types: [minor, patch]
+
   - package-ecosystem: pip
     directory: /plugins/kafka-explorer/testing
+    target-branch: app/kafka-explorer/main
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
