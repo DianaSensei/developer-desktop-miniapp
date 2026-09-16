@@ -8,10 +8,21 @@ name: Release plugins
 # Settings → Extensions installs directly from a manifest URL here (see
 # docs/plugin-sdk/05-external-install.md in that repo); the site reads
 # catalog.json to render the installable-plugins list.
+#
+# Also runnable manually (workflow_dispatch) for environments that can drive
+# the GitHub Actions API but can't push a tag ref (e.g. a scoped CI bot
+# token). `gh release create` below creates the tag itself, pointed at
+# whatever ref the manual run used, if it doesn't already exist.
 on:
   push:
     tags:
       - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release tag to create (e.g. v0.1.0)'
+        required: true
+        type: string
 
 permissions:
   contents: read
@@ -127,19 +138,23 @@ jobs:
           path: downloaded/sidecars
           merge-multiple: true
 
+      - name: Resolve release tag (workflow_dispatch input, or the pushed tag)
+        run: echo "RELEASE_TAG=${{ github.event_name == 'workflow_dispatch' && inputs.version || github.ref_name }}" >> "$GITHUB_ENV"
+
       - name: Build manifests + catalog.json and stage release assets
         run: node scripts/build-release.mjs
         env:
           GITHUB_REPOSITORY: ${{ github.repository }}
-          TAG: ${{ github.ref_name }}
+          TAG: ${{ env.RELEASE_TAG }}
 
       - name: Publish GitHub Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
-          gh release create "${GITHUB_REF_NAME}" \
+          gh release create "${RELEASE_TAG}" \
             --repo "${GITHUB_REPOSITORY}" \
-            --title "Plugins ${GITHUB_REF_NAME}" \
+            --title "Plugins ${RELEASE_TAG}" \
             --notes "Automated build of every plugin/sidecar in this repo. See catalog.json for the full list." \
+            --target "${{ github.sha }}" \
             release-assets/*
