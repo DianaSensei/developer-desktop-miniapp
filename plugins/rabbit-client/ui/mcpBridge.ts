@@ -8,8 +8,9 @@
 // matching handler below, then reports back via `mcp_respond`.
 //
 // Connection CRUD (list/add/update/delete) needs no React state at all —
-// `rabbitApi` is a thin wrapper over Tauri commands that read/write a JSON
-// file in the app data dir (src-tauri/src/rabbit.rs), so it can be called
+// `rabbitApi` is a thin wrapper over `sdk.service.call` to the sidecar
+// (this repo's `sidecar/`, shipped as `devtool-svc-rabbit`), which reads/writes
+// a JSON file in its own service-data dir, so it can be called
 // directly from here regardless of whether RabbitClient.tsx is mounted.
 // Test/connect additionally call `rabbitMgmt.testConnection` (a plain HTTP
 // request to the broker's management API) when the profile isn't

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { buildUsageIndex, describeUsers } from '@/components/tools/container/usage';
-import { describePruneResult } from '@/components/tools/container/PruneButton';
-import type { ContainerSummary } from '@/components/tools/container/types';
+import { buildUsageIndex, describeUsers } from './usage';
+import { describePruneResult } from './PruneButton';
+import type { ContainerSummary } from './types';
 
 const CONTAINERS: ContainerSummary[] = [
   {

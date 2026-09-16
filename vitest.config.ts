@@ -6,7 +6,6 @@ export default defineConfig({
   plugins: [react()],
   resolve: {
     alias: [
-      { find: '@/components/tools/container', replacement: path.resolve(import.meta.dirname, 'plugins/container-manager/ui') },
       { find: '@', replacement: path.resolve(import.meta.dirname, 'shared') },
     ],
   },

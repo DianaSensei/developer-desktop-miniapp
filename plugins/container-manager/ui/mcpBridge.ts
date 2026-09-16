@@ -12,8 +12,9 @@
 // below, then reports back via `mcp_respond`.
 //
 // Connection CRUD (list/add/update/delete) needs no React state at all —
-// `containerApi` is a thin wrapper over Tauri commands that read/write a
-// JSON file in the app data dir (src-tauri/src/bin/devtool-svc-container.rs), so it
+// `containerApi` is a thin wrapper over `sdk.service.call` to the sidecar
+// (this repo's `sidecar/`, shipped as `devtool-svc-container`), which
+// reads/writes a JSON file in its own service-data dir, so it
 // can be called directly regardless of whether ContainerManager.tsx is
 // mounted. Every lifecycle/image operation below needs an ACTIVE
 // connection (`state.connectedConnId`) — there is no per-call connection

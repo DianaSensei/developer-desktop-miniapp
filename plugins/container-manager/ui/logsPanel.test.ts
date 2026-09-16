@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildMatcher, formatTimestamp } from '@/components/tools/container/LogsPanel';
+import { buildMatcher, formatTimestamp } from './LogsPanel';
 
 describe('buildMatcher', () => {
   it('truy vấn rỗng không lọc gì', () => {

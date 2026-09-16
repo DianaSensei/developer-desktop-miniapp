@@ -1,22 +1,23 @@
-// Plugin dịch vụ (tier B) cho RabbitMQ Client — Bước 1+2 gộp của Phase 2 (xem
-// docs/decisions/architecture/platform-plugin-architecture.md, mục "Ba tier" và "Cách ly
-// dữ liệu"). Port từ src-tauri/src/rabbit.rs, giữ nguyên HÌNH DẠNG dữ liệu
+// Plugin dịch vụ (tier B) cho RabbitMQ Client. Port từ `rabbit.rs` của
+// developer-desktop-utils (bản built-in cũ, "Tier A") — Tier A đã bị xoá hẳn
+// khỏi repo đó (Phase 2 Bước 4/5 cắt hẳn sang sidecar này); repo này giờ là
+// bản triển khai duy nhất còn tồn tại. Giữ nguyên HÌNH DẠNG dữ liệu
 // (JSON camelCase, struct `RabbitConnection`/`PublishProps`/`PublishOutcome`/
-// ...) nhưng KHÔNG đụng file đó — nó vẫn chạy production (Tier A) song song
-// cho tới Bước 4/5 cắt hẳn, đúng mẫu `devtool-svc-redis.rs`/
-// `devtool-svc-container.rs` đã làm cho Redis/Container.
+// ...). Xem docs/decisions/architecture/platform-plugin-architecture.md
+// (repo developer-desktop-utils) mục "Ba tier" và "Cách ly dữ liệu" cho bối
+// cảnh đầy đủ.
 //
-// Khác với bản Tier A (`rabbit.rs`) đúng những chỗ là hệ quả của việc chạy
+// Khác với bản Tier A cũ đúng những chỗ là hệ quả của việc chạy
 // như tiến trình riêng, không có `AppHandle`:
 //   - Config CRUD đọc/ghi `<DEVTOOL_SERVICE_DATA_DIR>/connections.json` (biến
-//     môi trường `service_host.rs::get_or_spawn` set khi spawn) thay vì
-//     `plugin_data::plugin_data_dir(app, "rabbit-client")` — thư mục này ĐÃ
+//     môi trường `service_host.rs::get_or_spawn` set khi spawn) — thư mục này
 //     được cách ly riêng cho sidecar này
 //     (`<app_data>/service-data/devtool-svc-rabbit/`), KHÁC
-//     `plugin-data/rabbit-client/connections.json` mà Tier A dùng, có chủ ý —
-//     xem "Cách ly dữ liệu" trong ADR. KHÔNG di trú dữ liệu cũ: chỉ là cấu
-//     hình kết nối (host/port/thông tin đăng nhập/TLS), người dùng tự nhập
-//     lại được.
+//     `plugin-data/rabbit-client/connections.json` mà Tier A cũ dùng.
+//     Quyết định có chủ ý KHÔNG di trú dữ liệu cũ sang vị trí mới (xem
+//     "Cách ly dữ liệu" trong ADR) — người dùng nâng cấp từ bản built-in cũ
+//     cần tự nhập lại cấu hình kết nối (host/port/thông tin đăng nhập/TLS)
+//     một lần sau khi cài plugin.
 //   - main() spawn một task async cho mỗi dòng stdin vào, một task riêng sở
 //     hữu stdout qua kênh mpsc — y hệt cấu trúc `devtool-svc-redis.rs`/
 //     `devtool-svc-container.rs`, vì nhiều lời gọi có thể chồng lên nhau trên
@@ -241,9 +242,10 @@ pub struct ReplyOptions {
 //
 // Lưu trong thư mục RIÊNG của sidecar này (`DEVTOOL_SERVICE_DATA_DIR` —
 // `<app_data>/service-data/devtool-svc-rabbit/`), KHÁC
-// `plugin-data/rabbit-client/connections.json` mà `rabbit.rs` (Tier A, vẫn
-// đang chạy song song) đang dùng. Cách ly bằng thư mục, không phải bằng tên
-// file — xem module doc comment ở trên và ADR mục "Cách ly dữ liệu".
+// `plugin-data/rabbit-client/connections.json` mà `rabbit.rs` (Tier A cũ, đã
+// bị xoá khỏi developer-desktop-utils) từng dùng. Cách ly bằng thư mục,
+// không phải bằng tên file — xem module doc comment ở trên và ADR mục "Cách
+// ly dữ liệu".
 
 fn app_data_dir() -> Result<PathBuf, String> {
     std::env::var("DEVTOOL_SERVICE_DATA_DIR")

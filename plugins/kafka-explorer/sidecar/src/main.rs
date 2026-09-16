@@ -1,8 +1,10 @@
-// Plugin dịch vụ (tier B) cho Kafka Explorer — port từ
-// developer-desktop-utils's src-tauri/src/kafka.rs, giữ nguyên toàn bộ logic
-// rskafka + wire-protocol thô (metadata/offsets/groups/configs — rskafka
-// không expose các API này) và HÌNH DẠNG dữ liệu JSON (camelCase). Khác với
-// bản Tier A đúng những chỗ là hệ quả của việc chạy như tiến trình riêng —
+// Plugin dịch vụ (tier B) cho Kafka Explorer — port từ `kafka.rs` của
+// developer-desktop-utils (bản built-in cũ, "Tier A") — Tier A đã bị xoá hẳn
+// khỏi repo đó; repo này giờ là bản triển khai duy nhất còn tồn tại. Giữ
+// nguyên toàn bộ logic rskafka + wire-protocol thô (metadata/offsets/groups/
+// configs — rskafka không expose các API này) và HÌNH DẠNG dữ liệu JSON
+// (camelCase). Khác với bản Tier A cũ đúng những chỗ là hệ quả của việc chạy
+// như tiến trình riêng —
 // xem redis-client/sidecar/src/main.rs's file-level comment cho giải thích
 // đầy đủ về hai điểm đó (không có AppHandle -> DEVTOOL_SERVICE_DATA_DIR; có
 // thể nhiều lời gọi chồng lên nhau -> spawn một task async mỗi dòng, một

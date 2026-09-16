@@ -8,8 +8,8 @@
 //
 // Connection CRUD (list/add/update/delete/test) needs no React state at
 // all — `redisApi` (createRedisApi in ./types.ts) is a thin wrapper over
-// `sdk.service.call` to the Tier B sidecar (src-tauri/src/bin/devtool-svc-redis.rs),
-// which reads/writes a JSON file in ITS OWN service-data dir, so it can be
+// `sdk.service.call` to the sidecar (this repo's `sidecar/`, shipped as
+// `devtool-svc-redis`), which reads/writes a JSON file in ITS OWN service-data dir, so it can be
 // called directly from here regardless of whether RedisClient.tsx is
 // mounted. Only connect/disconnect (which selects/connects a *saved*
 // connection) touches persisted UI state (`connectedConnId`/`db`), which is

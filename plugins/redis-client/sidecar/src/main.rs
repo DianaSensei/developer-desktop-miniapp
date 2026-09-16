@@ -1,10 +1,12 @@
-// Plugin dịch vụ (tier B) cho Redis Client — Bước 1 của Phase 2 (xem
-// docs/decisions/architecture/platform-plugin-architecture.md, mục "Việc còn lại").
-//
-// Port từ src-tauri/src/redis_tool.rs, giữ nguyên HÌNH DẠNG dữ liệu (JSON
+// Plugin dịch vụ (tier B) cho Redis Client. Port từ `redis_tool.rs` của
+// developer-desktop-utils (bản built-in cũ, "Tier A") — Tier A đã bị xoá hẳn
+// khỏi repo đó (Phase 2 Bước 4/5 cắt hẳn sang sidecar này); repo này giờ là
+// bản triển khai duy nhất còn tồn tại. Giữ nguyên HÌNH DẠNG dữ liệu (JSON
 // camelCase, ngữ nghĩa SCAN/VALUE_CAP) nhưng ĐỔI chỗ lưu cấu hình kết nối một
-// cách có chủ ý — xem "Cách ly dữ liệu" dưới. Khác với bản Tier A đúng hai
-// chỗ, cả hai đều là hệ quả của việc chạy như tiến trình riêng:
+// cách có chủ ý — xem "Cách ly dữ liệu" dưới. Xem
+// docs/decisions/architecture/platform-plugin-architecture.md (repo
+// developer-desktop-utils) cho bối cảnh đầy đủ. Khác với bản Tier A cũ đúng
+// hai chỗ, cả hai đều là hệ quả của việc chạy như tiến trình riêng:
 //   - Không có `AppHandle` → thư mục dữ liệu đọc từ biến môi trường
 //     `DEVTOOL_SERVICE_DATA_DIR` mà `service_host.rs::get_or_spawn` set khi
 //     spawn — thư mục này ĐÃ được cách ly riêng cho sidecar này
@@ -128,15 +130,13 @@ pub struct RedisConnection {
 //
 // Lưu trong thư mục RIÊNG của sidecar này (`DEVTOOL_SERVICE_DATA_DIR` —
 // `<app_data>/service-data/devtool-svc-redis/`), KHÔNG phải cùng chỗ với file
-// `redis-connections.json` mà `redis_tool.rs` (Tier A, vẫn đang chạy song
-// song) đang dùng. Cách ly bằng thư mục, không phải bằng tên file: sidecar
-// này không biết và không có cách nào đọc/ghi ra ngoài thư mục của chính nó.
-// Hệ quả: cấu hình lưu qua Tier A hiện tại và qua sidecar này (chưa có
-// `plugin.ts` nào gọi tới nó) là HAI bản riêng biệt cho tới khi Bước 4/5 của
-// Phase 2 (xem docs/decisions/architecture/platform-plugin-architecture.md) chuyển hẳn
-// frontend sang sidecar này — lúc đó cần một bước di trú (copy nội dung
-// `redis-connections.json` cũ vào `connections.json` trong thư mục mới) để
-// không mất cấu hình người dùng đã lưu qua Tier A.
+// `redis-connections.json` mà `redis_tool.rs` (Tier A cũ, đã bị xoá khỏi
+// developer-desktop-utils) từng dùng. Cách ly bằng thư mục, không phải bằng
+// tên file: sidecar này không biết và không có cách nào đọc/ghi ra ngoài thư
+// mục của chính nó. Quyết định có chủ ý KHÔNG di trú cấu hình cũ sang vị trí
+// mới (xem "Cách ly dữ liệu" trong ADR ở developer-desktop-utils) — người
+// dùng nâng cấp từ bản built-in cũ cần tự nhập lại connection sau khi cài
+// plugin; xem CHANGELOG.md của repo đó cho ghi chú dành cho người dùng.
 
 fn app_data_dir() -> Result<PathBuf, String> {
     std::env::var("DEVTOOL_SERVICE_DATA_DIR")
