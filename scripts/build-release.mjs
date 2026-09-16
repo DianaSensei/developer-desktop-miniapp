@@ -46,7 +46,10 @@ for (const { id, bin } of PLUGINS) {
 
   // --- kind: "plugin" (webview bundle) ---
   const bundleAsset = `${id}-bundle.mjs`;
-  copyFileSync(`downloaded/bundles/plugins/${id}/dist/bundle.mjs`, `release-assets/${bundleAsset}`);
+  // build-plugins uploads with path `plugins/*/dist/bundle.mjs`; actions/upload-artifact
+  // strips the matched glob's common ancestor (`plugins/`) from the archive, so the
+  // artifact's own layout is `<id>/dist/bundle.mjs`, not `plugins/<id>/dist/bundle.mjs`.
+  copyFileSync(`downloaded/bundles/${id}/dist/bundle.mjs`, `release-assets/${bundleAsset}`);
   const pluginManifest = JSON.parse(readFileSync(`${dir}/manifest.plugin.json`, 'utf-8'));
   pluginManifest.version = version;
   pluginManifest.entry = releaseUrl(bundleAsset);
