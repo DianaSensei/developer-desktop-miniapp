@@ -1,26 +1,33 @@
-name: Release plugins
+name: Release redis-client
 
-# Tag push (v*) builds every plugin bundle (kind="plugin") and every sidecar
-# binary (kind="service") for the target triples below, computes SHA-256 for
-# each artifact, fills the manifest templates with real URLs/integrity, and
-# publishes everything — bundles, binaries, manifests, and one aggregated
-# catalog.json — as assets on a single GitHub Release. developer-desktop-utils's
-# Settings → Extensions installs directly from a manifest URL here (see
-# docs/plugin-sdk/05-external-install.md in that repo); the site reads
-# catalog.json to render the installable-plugins list.
+# This branch (app/redis-client/main) releases ONLY the redis-client plugin
+# — forked from the devtool-plugins skeleton (main); see that branch's
+# README.md for why plugins live on their own branches instead of one
+# monorepo tree (fault isolation + independent versioning per plugin).
+#
+# Tag push (redis-client-v*) builds the plugin bundle (kind="plugin") and
+# its sidecar binary (kind="service") for the target triples below,
+# computes SHA-256 for each artifact, fills the manifest templates with
+# real URLs/integrity, and publishes everything as assets on a GitHub
+# Release — then merges just this plugin's entry into the aggregated
+# catalog.json living on `main` (see the `publish` job's last steps), never
+# touching any other plugin's entry there.
 #
 # Also runnable manually (workflow_dispatch) for environments that can drive
 # the GitHub Actions API but can't push a tag ref (e.g. a scoped CI bot
 # token). `gh release create` below creates the tag itself, pointed at
 # whatever ref the manual run used, if it doesn't already exist.
+env:
+  PLUGIN_ID: redis-client
+
 on:
   push:
     tags:
-      - 'v*'
+      - 'redis-client-v*'
   workflow_dispatch:
     inputs:
       version:
-        description: 'Release tag to create (e.g. v0.1.0)'
+        description: 'Release tag to create (e.g. redis-client-v0.1.0)'
         required: true
         type: string
 
@@ -80,9 +87,6 @@ jobs:
         with:
           workspaces: |
             plugins/redis-client/sidecar -> target
-            plugins/rabbit-client/sidecar -> target
-            plugins/container-manager/sidecar -> target
-            plugins/kafka-explorer/sidecar -> target
 
       # Discovers sidecars dynamically (any plugins/*/sidecar with a
       # Cargo.toml) so adding a new plugin here never requires touching this
@@ -163,8 +167,8 @@ jobs:
           set -euo pipefail
           gh release create "${RELEASE_TAG}" \
             --repo "${GITHUB_REPOSITORY}" \
-            --title "Plugins ${RELEASE_TAG}" \
-            --notes "Automated build of every plugin/sidecar in this repo. See catalog.json for the full list." \
+            --title "${PLUGIN_ID} ${RELEASE_TAG}" \
+            --notes "Automated build of the ${PLUGIN_ID} plugin/sidecar." \
             --target "${{ github.sha }}" \
             --draft \
             release-assets/*
@@ -174,18 +178,32 @@ jobs:
       # (starlight-site's /plugins page) fails CORS silently — the page's
       # error handler then leaves every button in its disabled "loading"
       # state forever. raw.githubusercontent.com does send that header, so
-      # also commit catalog.json straight into the repo and have the site
-      # read it from there instead of from the release asset.
-      - name: Commit catalog.json to the repo (raw.githubusercontent.com serves it with CORS)
+      # catalog.json lives as a committed file on `main` (the skeleton
+      # branch), not a release asset.
+      #
+      # This branch only builds/releases ONE plugin — release-assets/catalog.json
+      # from build-release.mjs above therefore has exactly one entry (this
+      # plugin's). Overwriting main's catalog.json with that would wipe out
+      # every other plugin's entry, so this merges instead: fetch main's
+      # current catalog.json, replace only this plugin's entry in it, and
+      # push that as a new commit ON TOP OF main's tip — not on top of this
+      # branch's history, since `git switch` below re-points the working
+      # tree at main before committing.
+      - name: Merge this plugin's entry into main's catalog.json and commit
         run: |
           set -euo pipefail
+          git fetch origin main
+          git show origin/main:catalog.json > /tmp/base-catalog.json 2>/dev/null || echo '{"plugins":[]}' > /tmp/base-catalog.json
+          node scripts/merge-catalog-entry.mjs /tmp/base-catalog.json release-assets/catalog.json /tmp/merged-catalog.json
+
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          cp release-assets/catalog.json catalog.json
+          git switch -c catalog-sync origin/main
+          cp /tmp/merged-catalog.json catalog.json
           git add catalog.json
           git diff --cached --quiet && exit 0
-          git commit -m "Update catalog.json for ${RELEASE_TAG}"
-          git push origin HEAD:${{ github.event.repository.default_branch }}
+          git commit -m "catalog: update ${PLUGIN_ID} to ${RELEASE_TAG}"
+          git push origin HEAD:main
 
       # The point of no return: everything above succeeded (no
       # continue-on-error anywhere in this job), so this is the first point

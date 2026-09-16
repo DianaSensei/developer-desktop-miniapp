@@ -1,7 +1,0 @@
-{
-  "kind": "service",
-  "bin": "devtool-svc-rabbit",
-  "version": "0.0.0",
-  "protocol": 1,
-  "targets": {}
-}

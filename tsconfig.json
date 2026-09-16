@@ -14,7 +14,6 @@
     "isolatedModules": true,
     "noEmit": true,
     "paths": {
-      "@/components/tools/container/*": ["./plugins/container-manager/ui/*"],
       "@/*": ["./shared/*"]
     }
   },
