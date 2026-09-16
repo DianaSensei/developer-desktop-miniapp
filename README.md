@@ -59,17 +59,30 @@ branch, same as merging any upstream change.
 
 ## Adding a new plugin
 
-1. `git checkout -b app/<new-id>/main main`
-2. Build out `plugins/<new-id>/` (copy the shape of an existing plugin
-   branch: `ui/`, `entry.tsx`, `manifest.plugin.json`, `manifest.service.json`
-   if it has a sidecar, `vite.config.ts` via `makePluginConfig`).
-3. Copy that existing branch's `ci.yml`/`release.yml`/`package.json`
-   `build`/`test` scripts and swap the plugin id.
-4. Add `dependabot.yml` entries for the new branch in **this** branch
-   (`main`) — Dependabot only ever reads `.github/dependabot.yml` from the
-   repo's default branch, using each entry's `target-branch` to reach the
-   others.
-5. Push a `<new-id>-vX.Y.Z` tag to trigger its first release.
+From `main`, with a clean working tree:
+
+```bash
+node scripts/create-plugin.mjs                    # interactive — prompts for whatever's missing
+# or, non-interactive:
+node scripts/create-plugin.mjs <new-id> --label "Label" --description "..." [--sidecar]
+```
+
+This creates `app/<new-id>/main`, scaffolds `plugins/<new-id>/` (`ui/`,
+`entry.tsx`, manifest templates, `sidecar/` if requested), points
+`package.json`/`tsconfig.json`/`vitest.config.ts`/`ci.yml`/`release.yml` at
+it, runs the same verify steps CI runs (reported, not blocking — a fresh
+scaffold has 0 tests and a placeholder UI by design), and adds this
+plugin's `dependabot.yml` entries on `main` (Dependabot only ever reads
+that file from the repo's default branch, using each entry's
+`target-branch` to reach the others). Both commits (new branch + `main`)
+stay **local** — nothing is pushed automatically.
+
+Then:
+1. Fill in the real UI (`ui/*.tsx`), sidecar (`sidecar/src/main.rs`) if
+   any, and `manifest.plugin.json`'s keywords/permissions/icon.
+2. Add a real test, re-verify: `npm run lint:manifests && npm run typecheck && npm test && npm run build`
+3. `git push -u origin main && git push -u origin app/<new-id>/main`
+4. `git tag <new-id>-v0.1.0 && git push origin <new-id>-v0.1.0` — triggers its first release.
 
 ## Installing a plugin
 
