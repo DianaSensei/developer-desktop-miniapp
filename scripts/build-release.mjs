@@ -11,8 +11,20 @@ import path from 'node:path';
 
 const repo = process.env.GITHUB_REPOSITORY;
 const tag = process.env.TAG;
-const version = tag.replace(/^v/, '');
-if (!repo || !tag) throw new Error('GITHUB_REPOSITORY and TAG env vars are required');
+const pluginId = process.env.PLUGIN_ID;
+if (!repo || !tag || !pluginId) throw new Error('GITHUB_REPOSITORY, TAG, and PLUGIN_ID env vars are required');
+
+// Tags are "<PLUGIN_ID>-vX.Y.Z" (each plugin branch releases independently —
+// see main's README.md), not the old shared repo-wide "vX.Y.Z". Confirmed
+// the hard way: redis-client-v1.0.0's first live release under the new
+// per-plugin scheme left `tag.replace(/^v/, '')` untouched (the tag doesn't
+// START with "v"), stamping the literal string "redis-client-v1.0.0" into
+// both the manifest and catalog.json's "version" field instead of "1.0.0".
+const versionPrefix = `${pluginId}-v`;
+if (!tag.startsWith(versionPrefix)) {
+  throw new Error(`Expected tag "${tag}" to start with "${versionPrefix}"`);
+}
+const version = tag.slice(versionPrefix.length);
 
 const releaseUrl = (asset) => `https://github.com/${repo}/releases/download/${tag}/${asset}`;
 const sha256 = (filePath) => createHash('sha256').update(readFileSync(filePath)).digest('hex');
