@@ -168,7 +168,7 @@ jobs:
           set -euo pipefail
           gh release create "${RELEASE_TAG}" \
             --repo "${GITHUB_REPOSITORY}" \
-            --title "${PLUGIN_ID} ${RELEASE_TAG}" \
+            --title "${RELEASE_TAG}" \
             --notes "Automated build of the ${PLUGIN_ID} plugin/sidecar." \
             --target "${{ github.sha }}" \
             --draft \
