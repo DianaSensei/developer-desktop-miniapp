@@ -13,10 +13,9 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "noEmit": true,
-    "baseUrl": ".",
     "paths": {
-      "@/components/tools/container/*": ["plugins/container-manager/ui/*"],
-      "@/*": ["shared/*"]
+      "@/components/tools/container/*": ["./plugins/container-manager/ui/*"],
+      "@/*": ["./shared/*"]
     }
   },
   "include": ["plugins/**/*.ts", "plugins/**/*.tsx", "shared/**/*.ts", "shared/**/*.tsx"],
