@@ -40,10 +40,7 @@ jobs:
       - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
         with:
           workspaces: |
-            plugins/redis-client/sidecar -> target
             plugins/rabbit-client/sidecar -> target
-            plugins/container-manager/sidecar -> target
-            plugins/kafka-explorer/sidecar -> target
 
       - name: Build every sidecar (native target, debug — full cross-compile matrix is release.yml's job)
         shell: bash
