@@ -147,7 +147,16 @@ jobs:
           GITHUB_REPOSITORY: ${{ github.repository }}
           TAG: ${{ env.RELEASE_TAG }}
 
-      - name: Publish GitHub Release
+      # --draft: the "Commit catalog.json" step below can still fail (e.g. a
+      # concurrent push to the default branch racing this one), and a draft
+      # is invisible to anything reading the release — developer-desktop-utils'
+      # Settings → Extensions install-from-manifest-URL flow and starlight-site's
+      # catalog.json fetch both alike. Without --draft, a failure there leaves
+      # a live release whose commited catalog.json never landed (same failure
+      # class release.yml's own build-then-tag redesign in developer-desktop-utils
+      # exists to prevent one level up, at the tag/release boundary — this is
+      # the same fix applied to this job's own remaining internal step).
+      - name: Publish GitHub Release (draft)
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -157,6 +166,7 @@ jobs:
             --title "Plugins ${RELEASE_TAG}" \
             --notes "Automated build of every plugin/sidecar in this repo. See catalog.json for the full list." \
             --target "${{ github.sha }}" \
+            --draft \
             release-assets/*
 
       # Release assets are served from a storage host that never sends
@@ -176,3 +186,13 @@ jobs:
           git diff --cached --quiet && exit 0
           git commit -m "Update catalog.json for ${RELEASE_TAG}"
           git push origin HEAD:${{ github.event.repository.default_branch }}
+
+      # The point of no return: everything above succeeded (no
+      # continue-on-error anywhere in this job), so this is the first point
+      # the release becomes visible to anything reading it. If the job stops
+      # before this step, what's left behind is a draft, not a broken live
+      # release with a stale/missing catalog.json.
+      - name: Publish the release (flip draft -> published)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release edit "${RELEASE_TAG}" --draft=false --repo "${GITHUB_REPOSITORY}"
