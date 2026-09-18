@@ -8,14 +8,56 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import path from 'node:path';
 
+// Re-exports every named export a plugin might pull from 'react'/'react-dom'
+// (not just default) — a namespace import (`import * as R from 'react'`) or a
+// named one (`import { useState } from 'react'`) both need the name to exist
+// on this virtual module, not just a default export wrapping the object.
+const REACT_NAMED_EXPORTS = [
+  'Children', 'Component', 'Fragment', 'Profiler', 'PureComponent', 'StrictMode', 'Suspense',
+  'cloneElement', 'createContext', 'createElement', 'createRef', 'forwardRef', 'isValidElement',
+  'lazy', 'memo', 'startTransition',
+  'useCallback', 'useContext', 'useDebugValue', 'useDeferredValue', 'useEffect', 'useId',
+  'useImperativeHandle', 'useInsertionEffect', 'useLayoutEffect', 'useMemo', 'useReducer',
+  'useRef', 'useState', 'useSyncExternalStore', 'useTransition', 'version',
+];
+const REACT_DOM_NAMED_EXPORTS = [
+  'createPortal', 'findDOMNode', 'flushSync', 'unstable_batchedUpdates', 'render', 'hydrate',
+  'unmountComponentAtNode', 'version',
+];
+
 const vendorShim = {
   name: 'devtool-vendor-shim',
+  // Vite's own core resolver plugin (which resolves bare specifiers against
+  // node_modules) runs before a "normal" user plugin's resolveId — without
+  // `enforce: 'pre'` here, 'react' would resolve to the real npm package
+  // installed for this repo's own tooling (@testing-library/react etc.)
+  // before this shim ever sees it, silently bundling a second React copy.
+  enforce: 'pre',
+  // NOTE: do NOT also list these in build.rollupOptions.external — when a
+  // plugin's resolveId returns a bare id (not `{ id, external: false }`)
+  // AND that id is in `external`, Rollup treats it as external and never
+  // calls `load()`, leaving an unresolved `import ... from "react"` in the
+  // output. That bundle then fails in the browser ("does not resolve to a
+  // valid URL") once loaded via blob: URL + dynamic import(), which has no
+  // import map to resolve a bare specifier against.
   resolveId(id) {
     return ['react', 'react-dom', 'react/jsx-runtime'].includes(id) ? id : null;
   },
   load(id) {
-    if (id === 'react') return 'export default window.__DEVTOOL_VENDOR__.react;';
-    if (id === 'react-dom') return 'export default window.__DEVTOOL_VENDOR__.reactDomFull;';
+    if (id === 'react') {
+      return `
+        const _react = window.__DEVTOOL_VENDOR__.react;
+        export default _react.default ?? _react;
+        export const { ${REACT_NAMED_EXPORTS.join(', ')} } = _react;
+      `;
+    }
+    if (id === 'react-dom') {
+      return `
+        const _dom = window.__DEVTOOL_VENDOR__.reactDomFull;
+        export default _dom.default ?? _dom;
+        export const { ${REACT_DOM_NAMED_EXPORTS.join(', ')} } = _dom;
+      `;
+    }
     if (id === 'react/jsx-runtime') {
       return `
         export const jsx = window.__DEVTOOL_VENDOR__.jsxRuntime.jsx;
@@ -51,7 +93,6 @@ export function makePluginConfig(pluginDir, extraAliasFrom) {
         fileName: () => 'bundle.mjs',
       },
       rollupOptions: {
-        external: ['react', 'react-dom', 'react/jsx-runtime'],
         output: { inlineDynamicImports: true },
       },
       minify: 'esbuild',
