@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { type ContainerConnection } from './types';
 import { useContainerApi } from './api_sdk';
-import { useContainerRuntime } from './mcpRuntimeContext';
+import { useContainerState } from './useContainerState';
 import { useMcpBridge } from './mcpBridge';
 import { LeftPanel } from './LeftPanel';
 import { OverviewView } from './OverviewView';
@@ -28,7 +28,11 @@ let cachedConnections: ContainerConnection[] | null = null;
 
 export function ContainerManager() {
   const containerApi = useContainerApi();
-  const containerState = useContainerRuntime();
+  // No shared context here: this component is the only mount point for
+  // `useContainerState()` now that Containers is a route-scoped installable
+  // plugin (see mcpBridge.ts's header comment) — there is no app-root
+  // background bridge instance to keep in sync with.
+  const containerState = useContainerState();
   const {
     selectedConnId, setSelectedConnId, connectedConnId, setConnectedConnId,
     view, showOverview, showContainers, showImages, showVolumes, showNetworks, showCompose,
@@ -37,9 +41,15 @@ export function ContainerManager() {
 
   const sdk = usePluginSdkFor('container-manager');
   const mcpBridgeActive = usePluginMcpBridgeActive(sdk);
-  // Skipped while the background bridge (Settings → MCP) is on — that one
-  // instance, mounted once at the app root, already answers for this exact
-  // state regardless of which tool is on screen (see mcpRuntimeContext.tsx).
+  // NOTE: `usePluginMcpBridgeActive` also returns false when the user has
+  // the app-wide "answer in background" setting on, on the assumption that
+  // an app-root background bridge covers this tool while it's off screen —
+  // true for API Client/Mock Server, but there is no such background bridge
+  // for this route-scoped installable plugin (see mcpBridge.ts's header
+  // comment). So with that setting on, `container_*` MCP calls go
+  // unanswered even while this tool IS on screen. Left as-is here since
+  // fixing it means changing `usePluginMcpBridgeActive` itself, in the host
+  // app, for all four moved plugins at once — not a per-plugin fix.
   // Also skipped outright when the per-tool MCP toggle is off for Containers.
   useMcpBridge(containerState, mcpBridgeActive);
 
