@@ -1,6 +1,6 @@
 {
-  "version": "0.0.3",
-  "generatedAt": "2026-09-18T03:22:04.164Z",
+  "version": "1.0.2",
+  "generatedAt": "2026-09-18T03:22:15.475Z",
   "plugins": [
     {
       "id": "container-manager",
@@ -114,9 +114,9 @@
         "cli",
         "in-memory"
       ],
-      "version": "1.0.1",
-      "pluginManifestUrl": "https://github.com/DianaSensei/developer-desktop-util-plugin/releases/download/redis-client-v1.0.1/redis-client-plugin.manifest.json",
-      "serviceManifestUrl": "https://github.com/DianaSensei/developer-desktop-util-plugin/releases/download/redis-client-v1.0.1/redis-client-service.manifest.json",
+      "version": "1.0.2",
+      "pluginManifestUrl": "https://github.com/DianaSensei/developer-desktop-miniapp/releases/download/redis-client-v1.0.2/redis-client-plugin.manifest.json",
+      "serviceManifestUrl": "https://github.com/DianaSensei/developer-desktop-miniapp/releases/download/redis-client-v1.0.2/redis-client-service.manifest.json",
       "targets": [
         "aarch64-apple-darwin",
         "x86_64-pc-windows-msvc",
