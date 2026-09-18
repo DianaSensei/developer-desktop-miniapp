@@ -1,6 +1,6 @@
 {
-  "version": "0.0.2",
-  "generatedAt": "2026-09-18T03:20:56.089Z",
+  "version": "0.0.3",
+  "generatedAt": "2026-09-18T03:22:04.164Z",
   "plugins": [
     {
       "id": "container-manager",
@@ -58,9 +58,9 @@
         "broker",
         "stream"
       ],
-      "version": "0.0.2",
-      "pluginManifestUrl": "https://github.com/DianaSensei/developer-desktop-util-plugin/releases/download/v0.0.2/kafka-explorer-plugin.manifest.json",
-      "serviceManifestUrl": "https://github.com/DianaSensei/developer-desktop-util-plugin/releases/download/v0.0.2/kafka-explorer-service.manifest.json",
+      "version": "0.0.3",
+      "pluginManifestUrl": "https://github.com/DianaSensei/developer-desktop-miniapp/releases/download/kafka-explorer-v0.0.3/kafka-explorer-plugin.manifest.json",
+      "serviceManifestUrl": "https://github.com/DianaSensei/developer-desktop-miniapp/releases/download/kafka-explorer-v0.0.3/kafka-explorer-service.manifest.json",
       "targets": [
         "aarch64-apple-darwin",
         "x86_64-pc-windows-msvc",
