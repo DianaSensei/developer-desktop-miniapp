@@ -1,6 +1,6 @@
 {
-  "version": "0.0.1",
-  "generatedAt": "2026-09-16T17:44:35.211Z",
+  "version": "0.0.2",
+  "generatedAt": "2026-09-18T03:20:56.089Z",
   "plugins": [
     {
       "id": "container-manager",
@@ -33,9 +33,9 @@
         "subnet",
         "ipam"
       ],
-      "version": "0.0.1",
-      "pluginManifestUrl": "https://github.com/DianaSensei/developer-desktop-miniapp/releases/download/container-manager-v0.0.1/container-manager-plugin.manifest.json",
-      "serviceManifestUrl": "https://github.com/DianaSensei/developer-desktop-miniapp/releases/download/container-manager-v0.0.1/container-manager-service.manifest.json",
+      "version": "0.0.2",
+      "pluginManifestUrl": "https://github.com/DianaSensei/developer-desktop-miniapp/releases/download/container-manager-v0.0.2/container-manager-plugin.manifest.json",
+      "serviceManifestUrl": "https://github.com/DianaSensei/developer-desktop-miniapp/releases/download/container-manager-v0.0.2/container-manager-service.manifest.json",
       "targets": [
         "aarch64-apple-darwin",
         "x86_64-pc-windows-msvc",
