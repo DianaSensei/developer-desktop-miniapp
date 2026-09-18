@@ -13,7 +13,7 @@ import { ConsumeView } from './ConsumeView';
 import { ProduceView } from './ProduceView';
 import { KafkaInfoModal } from './KafkaInfoModal';
 import { ToolHeaderActions } from '@/components/ToolHeaderActions';
-import { useKafkaRuntime } from './mcpRuntimeContext';
+import { useKafkaState } from './useKafkaState';
 import { useMcpBridge } from './mcpBridge';
 import { useKafkaApi } from './api_sdk';
 import { kafkaConsumerStore } from './kafkaConsumerStore';
@@ -25,7 +25,11 @@ const LEFT_DEFAULT = 256;
 
 export function KafkaExplorer() {
   const kafkaApi = useKafkaApi();
-  const kafkaState = useKafkaRuntime();
+  // No shared context here: this component is the only mount point for
+  // `useKafkaState()` now that Kafka Explorer is a route-scoped installable
+  // plugin (see mcpBridge.ts's header comment) — there is no app-root
+  // background bridge instance to keep in sync with.
+  const kafkaState = useKafkaState();
   const {
     selectedBrokerId,
     setSelectedBrokerId,
