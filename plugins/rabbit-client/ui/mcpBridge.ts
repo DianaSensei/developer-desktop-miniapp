@@ -16,16 +16,17 @@
 // request to the broker's management API) when the profile isn't
 // AMQP-only — same two-step check as RabbitClient.tsx's own handleConnect.
 // Only connect/disconnect touches persisted UI state (`connectedConnId`),
-// which is why those go through the shared `RabbitState` from
-// mcpRuntimeContext.tsx instead of a second independent `usePersistentState`
-// instance.
+// which is why those go through the same `RabbitState` instance
+// `RabbitClient.tsx` itself holds, passed in as an argument, instead of a
+// second independent `usePersistentState` instance.
 //
-// Two mount points call this hook: `RabbitClient.tsx` (while the tool is on
-// screen — always works, no setting needed) and, when the user opts in via
-// Settings → MCP, `McpBackgroundBridge.tsx` at the app root (works
-// regardless of which tool is on screen). `enabled` lets a caller mount the
-// hook without it actually registering a listener, so the two mount points
-// don't both listen at once and double-answer the same call.
+// Only one mount point calls this hook: `RabbitClient.tsx`, while the tool
+// is on screen. RabbitMQ Client is a route-scoped installable plugin (see
+// docs/decisions/architecture/optional-broker-plugins.md in the host repo),
+// so unlike API Client/Mock Server there is no app-root background bridge —
+// MCP calls simply go unanswered while this route isn't open. `enabled`
+// still exists so the per-tool MCP toggle (Settings → MCP) can gate the
+// listener without changing the hooks called on every render.
 
 import { useEffect, useRef } from 'react';
 import { usePluginSdkFor } from '@/platform';

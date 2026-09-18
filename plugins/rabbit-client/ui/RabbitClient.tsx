@@ -9,7 +9,7 @@ import { cn } from '@/lib/utils';
 import { type RabbitConnection } from './types';
 import { useRabbitApi } from './api_sdk';
 import { rabbitMgmt } from './api';
-import { useRabbitRuntime } from './mcpRuntimeContext';
+import { useRabbitState } from './useRabbitState';
 import { useMcpBridge } from './mcpBridge';
 import { LeftPanel } from './LeftPanel';
 import { OverviewView } from './OverviewView';
@@ -34,7 +34,11 @@ let cachedConnections: RabbitConnection[] | null = null;
 
 export function RabbitClient() {
   const rabbitApi = useRabbitApi();
-  const rabbitState = useRabbitRuntime();
+  // No shared context here: this component is the only mount point for
+  // `useRabbitState()` now that RabbitMQ Client is a route-scoped
+  // installable plugin (see mcpBridge.ts's header comment) — there is no
+  // app-root background bridge instance to keep in sync with.
+  const rabbitState = useRabbitState();
   const {
     selectedConnId, setSelectedConnId, connectedConnId, setConnectedConnId,
     view, selectedQueue, selectedExchange, rpcPrefill, consumerPrefill, consumeDetailQueue,
