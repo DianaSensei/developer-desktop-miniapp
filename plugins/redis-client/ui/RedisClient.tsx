@@ -42,9 +42,15 @@ export function RedisClient() {
 
   const sdk = usePluginSdkFor('redis-client');
   const mcpBridgeActive = usePluginMcpBridgeActive(sdk);
-  // Skipped while the background bridge (Settings → MCP) is on — that one
-  // instance, mounted once at the app root, already answers for this exact
-  // state regardless of which tool is on screen (see mcpRuntimeContext.tsx).
+  // NOTE: `usePluginMcpBridgeActive` also returns false when the user has
+  // the app-wide "answer in background" setting on, on the assumption that
+  // an app-root background bridge covers this tool while it's off screen —
+  // true for API Client/Mock Server, but there is no such background bridge
+  // for this route-scoped installable plugin (see mcpBridge.ts's header
+  // comment). So with that setting on, `redis_*` MCP calls go unanswered
+  // even while this tool IS on screen. Left as-is here since fixing it means
+  // changing `usePluginMcpBridgeActive` itself, in the host app, for all
+  // four moved plugins at once — not a per-plugin fix.
   // Also skipped outright when the per-tool MCP toggle is off for Redis Client.
   useMcpBridge(redisState, mcpBridgeActive);
 
