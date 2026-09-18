@@ -1,6 +1,6 @@
 {
-  "version": "1.0.2",
-  "generatedAt": "2026-09-18T03:22:15.475Z",
+  "version": "0.0.3",
+  "generatedAt": "2026-09-18T03:23:15.949Z",
   "plugins": [
     {
       "id": "container-manager",
@@ -86,9 +86,9 @@
         "consume",
         "broker"
       ],
-      "version": "0.0.2",
-      "pluginManifestUrl": "https://github.com/DianaSensei/developer-desktop-util-plugin/releases/download/v0.0.2/rabbit-client-plugin.manifest.json",
-      "serviceManifestUrl": "https://github.com/DianaSensei/developer-desktop-util-plugin/releases/download/v0.0.2/rabbit-client-service.manifest.json",
+      "version": "0.0.3",
+      "pluginManifestUrl": "https://github.com/DianaSensei/developer-desktop-miniapp/releases/download/rabbit-client-v0.0.3/rabbit-client-plugin.manifest.json",
+      "serviceManifestUrl": "https://github.com/DianaSensei/developer-desktop-miniapp/releases/download/rabbit-client-v0.0.3/rabbit-client-service.manifest.json",
       "targets": [
         "aarch64-apple-darwin",
         "x86_64-pc-windows-msvc",
