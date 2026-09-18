@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { type RedisConnection } from './types';
 import { useRedisApi } from './api';
-import { useRedisRuntime } from './mcpRuntimeContext';
+import { useRedisState } from './useRedisState';
 import { useMcpBridge } from './mcpBridge';
 import { LeftPanel } from './LeftPanel';
 import { OverviewView } from './OverviewView';
@@ -28,7 +28,11 @@ let cachedConnections: RedisConnection[] | null = null;
 
 export function RedisClient() {
   const redisApi = useRedisApi();
-  const redisState = useRedisRuntime();
+  // No shared context here: this component is the only mount point for
+  // `useRedisState()` now that Redis Client is a route-scoped installable
+  // plugin (see mcpBridge.ts's header comment) — there is no app-root
+  // background bridge instance to keep in sync with.
+  const redisState = useRedisState();
   const {
     selectedConnId, setSelectedConnId, connectedConnId, setConnectedConnId,
     db, setDb, view, selectedKey,
