@@ -104,6 +104,26 @@ jobs:
             (cd "$dir" && cargo build --release --target ${{ matrix.rust-target }})
           done
 
+      # ci.yml already runs `cargo test` on every push, but only in debug
+      # mode on ubuntu — a tag push here can come from a commit whose CI run
+      # is stale, was skipped, or (workflow_dispatch) an arbitrary ref that
+      # never went through ci.yml at all. Re-running tests here, on the
+      # ACTUAL release build for all three platforms, is what makes this
+      # workflow self-sufficient: a release never publishes a binary this
+      # job hasn't itself verified. `--release --target` matches the binary
+      # `Build every sidecar` just produced above (not a redundant debug
+      # rebuild) — each matrix leg already runs on its own native target, so
+      # this is a normal same-arch test run, never cross-arch emulation.
+      - name: Run sidecar unit tests (non-#[ignore]'d only — no live broker/daemon in CI)
+        shell: bash
+        run: |
+          set -euo pipefail
+          for dir in plugins/*/sidecar; do
+            [ -f "$dir/Cargo.toml" ] || continue
+            echo "== $dir =="
+            (cd "$dir" && cargo test --release --target ${{ matrix.rust-target }})
+          done
+
       - name: Collect binaries (rename with target triple, add .exe on Windows)
         shell: bash
         run: |
