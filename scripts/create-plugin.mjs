@@ -4,8 +4,8 @@
 // ui/, manifest templates, sidecar/ if --sidecar), points package.json/
 // tsconfig.json/vitest.config.ts/ci.yml/release.yml at this plugin, commits
 // that on the new branch, runs the same verify steps CI runs (reporting —
-// not blocking — failures, since a fresh plugin has 0 tests and a
-// placeholder UI), then switches to `main`, adds this plugin's dependabot.yml
+// not blocking — failures, since a fresh plugin has only the scaffolded CSS
+// guard and a placeholder UI), then switches to `main`, adds this plugin's dependabot.yml
 // entries there (target-branch), and commits that too. It leaves you
 // checked out on the new plugin branch with both commits made locally —
 // review, then push both yourself (printed at the end): nothing here pushes
@@ -19,7 +19,7 @@
 // <id> must be kebab-case (letters/digits/hyphens, matching what
 // lint-manifests.mjs enforces).
 import { execFileSync } from 'node:child_process';
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { createInterface } from 'node:readline/promises';
 import { stdin, stdout } from 'node:process';
 
@@ -126,6 +126,16 @@ writeFileSync(
 writeFileSync(
   `plugins/${id}/ui/${pascal}.tsx`,
   `export function ${pascal}() {\n  return <div>TODO: build the ${id} UI.</div>;\n}\n`,
+);
+
+// The CSS guard every plugin starts with. A plugin bundle ships no stylesheet
+// and is styled by the host app's compiled Tailwind sheet, which never scans
+// this repo — so a class written only in a plugin can have no rule at all.
+// This test catches the arbitrary-value half offline; the rest needs
+// `scripts/check-host-classes.mjs` against a real host build.
+copyFileSync(
+  new URL('templates/hostCssClasses.test.ts', import.meta.url),
+  `plugins/${id}/ui/hostCssClasses.test.ts`,
 );
 
 writeFileSync(
@@ -561,12 +571,14 @@ console.log(`Scaffolded plugins/${id}/ (sidecar: ${sidecar}).`);
 git(['add', '-A']);
 git(['commit', '-m', `Scaffold ${id} plugin`]);
 
-// ── Run the same checks CI runs — reported, not enforced: a brand-new
-// plugin has 0 tests (a real plugin branch failing on 0 tests is by
-// design, see vitest.config.ts's comment above) and a placeholder UI, so
-// failing here is expected until you've actually built the thing. ────────
+// ── Run the same checks CI runs — reported, not enforced: a fresh plugin
+// has a placeholder UI and, with --sidecar, an empty service.methods list,
+// so failing here is expected until you've actually built the thing. The
+// scaffolded CSS guard means `test` is no longer among the expected
+// failures: it passes from the first run, and keeps passing as long as the
+// UI stays clear of arbitrary sizing classes. ───────────────────────────
 console.log(
-  '\nRunning verify steps (failures below are expected on a fresh scaffold — 0 tests, an empty UI, and (if --sidecar) an empty manifest.plugin.json service.methods list are all placeholders that fail on purpose until you fill them in):',
+  '\nRunning verify steps (failures below are expected on a fresh scaffold — an empty UI and (if --sidecar) an empty manifest.plugin.json service.methods list are placeholders that fail on purpose until you fill them in):',
 );
 const checks = [
   ['lint:manifests', ['npm', 'run', 'lint:manifests']],
@@ -653,7 +665,7 @@ console.log('\nDone. Both commits are LOCAL ONLY — nothing pushed. Next steps:
 const nextSteps = [
   `Fill in plugins/${id}/ui/${pascal}.tsx and manifest.plugin.json's keywords/permissions/icon.`,
   ...(sidecar ? [`Implement plugins/${id}/sidecar/src/main.rs and its manifest.service.json's methods.`] : []),
-  'Add a real test, then re-run: npm run lint:manifests && npm run typecheck && npm test && npm run build',
+  'Add real tests beside the scaffolded CSS guard, then re-run: npm run lint:manifests && npm run typecheck && npm test && npm run build',
   `git push -u origin main && git push -u origin ${newBranch}`,
   `git tag ${id}-v0.1.0 && git push origin ${id}-v0.1.0`,
 ];
