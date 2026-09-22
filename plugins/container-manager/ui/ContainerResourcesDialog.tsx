@@ -246,7 +246,7 @@ export function ContainerResourcesDialog({ open, onOpenChange, connection, targe
           </DialogTitle>
         </DialogHeader>
 
-        <div className="max-h-[65vh] overflow-y-auto pr-1 space-y-4">
+        <div className="overflow-y-auto pr-1 space-y-4" style={{ maxHeight: '65vh' }}>
           {loading && <LoadingRow />}
           {!loading && (
             <>
