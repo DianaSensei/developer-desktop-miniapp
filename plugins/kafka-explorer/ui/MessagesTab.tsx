@@ -11,6 +11,13 @@ import { cn } from '@/lib/utils';
 import { type KafkaMessage, type PartitionInfo } from './types';
 import { useKafkaApi } from './api_sdk';
 
+/* Sizes/offsets here are inline, not Tailwind classes: a plugin bundle ships no
+ * CSS and is styled by the host app's compiled Tailwind sheet, which Tailwind
+ * generates by scanning the HOST's `src/**`. This repo is never scanned, so a
+ * class written only here has a rule only if some host file happens to spell it
+ * identically — these did not, and rendered as nothing at all.
+ * See `scripts/check-host-classes.mjs` and the README's "Styling" section. */
+
 // Export helpers — bulk copy of the currently-shown messages.
 function messagesToJson(msgs: KafkaMessage[]): string {
   return JSON.stringify(msgs, null, 2);
@@ -146,7 +153,8 @@ function ColHeader({ label, col, align = 'left', sortCol, sortDir, onSort, onRes
       </button>
       {onResizeStart && (
         <div
-          className="absolute right-0 top-0 bottom-0 w-2 translate-x-full cursor-col-resize flex items-center justify-center z-10 group"
+          className="absolute right-0 top-0 bottom-0 w-2 cursor-col-resize flex items-center justify-center z-10 group"
+          style={{ transform: 'translateX(100%)' }}
           onMouseDown={onResizeStart}
         >
           <div className="w-px h-4 bg-line group-hover:bg-acc/70 transition-colors" />
