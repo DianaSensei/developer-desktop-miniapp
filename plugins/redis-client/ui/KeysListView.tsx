@@ -179,7 +179,7 @@ export function KeysListView({ conn, db, refreshKey, onRefresh, onSelectKey }: K
       </div>
 
       {selected.size > 0 && (
-        <div className="mx-5 mt-3 shrink-0 flex items-center justify-between gap-2 rounded-md border border-acc/30 bg-acc/5 px-3 py-2">
+        <div style={{ marginLeft: '1.25rem', marginRight: '1.25rem' }} className="mt-3 shrink-0 flex items-center justify-between gap-2 rounded-md border border-acc/30 bg-acc/5 px-3 py-2">
           <span className="text-xs text-fg-mute">{selected.size.toLocaleString()} selected</span>
           <div className="flex items-center gap-1.5">
             <Button size="sm" variant="outline" className="h-ctl" onClick={() => setSelected(new Set())}>Clear</Button>
