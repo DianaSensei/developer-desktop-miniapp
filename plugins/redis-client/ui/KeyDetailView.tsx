@@ -572,7 +572,7 @@ function StreamEditor({ entries, truncated, onAdd, onDelete }: {
         <Thead><Tr><Th className="w-40">ID</Th><Th>Fields</Th><Th className="w-8" /></Tr></Thead>
         <Tbody>
           {entries.map(([id, fields]) => (
-            <Tr key={id} className="group align-top">
+            <Tr key={id} className="group" style={{ verticalAlign: 'top' }}>
               <Td mono className="whitespace-nowrap">{id}</Td>
               <Td mono>
                 <div className="space-y-0.5">
@@ -595,7 +595,8 @@ function StreamEditor({ entries, truncated, onAdd, onDelete }: {
           value={draft}
           onChange={(e) => { setDraft(e.target.value); setError(null); }}
           placeholder="field = value"
-          className="font-mono text-xs min-h-16 resize-y"
+          className="font-mono text-xs resize-y"
+          style={{ minHeight: '4rem' }}
         />
         <div className="flex items-center justify-between gap-2">
           <p className="text-[11px] text-fg-mute">One field = value per line, added as one entry (<span className="font-mono">XADD {'{key}'} *</span>).</p>

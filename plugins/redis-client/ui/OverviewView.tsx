@@ -11,6 +11,16 @@ import { useRedisApi } from './api';
 import { useRedisData } from './useRedisData';
 import { parseInfo, formatUptime, formatNumber, hitRate } from './format';
 
+/**
+ * A plugin bundle ships no CSS: it is styled entirely by the host app's
+ * compiled Tailwind sheet, which Tailwind generates by scanning the HOST's
+ * `src/**`. This file is never scanned, so a class written only here has a
+ * rule only if some host file happens to spell it identically — otherwise it
+ * renders as nothing at all. Inline styles cannot be dropped that way.
+ * See `scripts/check-host-classes.mjs` and the README's "Styling" section.
+ */
+const INFO_GRID = { gridTemplateColumns: 'minmax(0,1fr) minmax(0,1.4fr)' } as const;
+
 interface OverviewViewProps {
   conn: RedisConnection;
   db: number;
@@ -78,7 +88,7 @@ export function OverviewView({ conn, db, refreshKey, onRefresh }: OverviewViewPr
             <div className="divide-y divide-line-soft rounded-lg border border-line-soft">
               {Object.entries(sections).map(([name, kv]) => (
                 <CollapsibleSection key={name} title={name} defaultOpen={false} headerClassName="px-3" bodyClassName="px-3">
-                  <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)] gap-x-4 gap-y-1 text-xs">
+                  <div className="grid gap-x-4 gap-y-1 text-xs" style={INFO_GRID}>
                     {Object.entries(kv).map(([k, v]) => (
                       <div key={k} className="contents">
                         <span className="text-fg-mute font-mono truncate">{k}</span>
