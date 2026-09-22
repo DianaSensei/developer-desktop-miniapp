@@ -10,21 +10,23 @@ import { describe, expect, it } from 'vitest';
  * never includes this repo, so a class only ever written here exists as text
  * in the DOM with no rule behind it.
  *
- * Named utilities (`flex`, `p-2`, `text-xs`, `h-ctl`, …) are effectively safe:
- * the host app uses the same kit everywhere, so a rule exists. **Arbitrary
- * values** (`h-[68vh]`, `max-h-[70vh]`, …) are the dangerous ones — each is a
- * distinct rule that only gets emitted if some host file happens to spell it
- * identically. `h-[68vh]` and `max-h-[calc(100vh-13rem)]` on the container log
+ * **Arbitrary values** (`h-[68vh]`, `max-h-[70vh]`, …) are the ones no host-side
+ * safelist can ever rescue: each is a distinct rule, emitted only if some host
+ * file happens to spell it character-for-character. `h-[68vh]` and `max-h-[calc(100vh-13rem)]` on the container log
  * dialog did not, so its log box fell back to `height: auto`, grew with every
  * line that streamed in, and ran the dialog off both ends of the screen with
  * its own toolbar out of reach.
  *
  * Sizing and layout is where a missing rule turns into an unusable window
  * rather than a cosmetic nudge, so those prefixes are gated here: use an
- * inline `style` instead, which no build step can drop. The allowlist holds
- * the arbitrary sizing classes verified present in the host's sheet today
- * (each is also written by at least one host `src/**` file); adding to it
- * means checking that first.
+ * inline `style` instead, which no build step can drop.
+ *
+ * **This is only the half that can be checked offline.** Plain named utilities
+ * go missing the same way — `bottom-3`, `pl-1.5` and `border-bad/60` all had no
+ * rule, which is why the log pane's "Jump to latest" button sat on top of the
+ * first line and stderr lines lost their red rule. Run the complete check
+ * against a real host build: `node scripts/check-host-classes.mjs
+ * <host>/dist/assets/*.css`, against the oldest host release still supported.
  */
 
 const GATED_PREFIXES = [
@@ -71,7 +73,12 @@ describe('plugin classes the host stylesheet may not contain', () => {
     for (const file of sources(UI_DIR)) {
       const src = stripComments(fs.readFileSync(file, 'utf8'));
       src.split('\n').forEach((line, i) => {
-        for (const token of line.split(/[\s"'`{}(),]+/)) {
+        // Matched, not split: `max-h-[calc(100vh-13rem)]` and
+        // `grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)]` contain parentheses and
+        // commas, so splitting on those tore them into fragments that no
+        // longer looked like classes — and the arbitrary values most worth
+        // catching are exactly the ones with a function call inside.
+        for (const [token] of line.matchAll(/[^\s"'`{}]+/g)) {
           const cls = gatedArbitraryClass(token);
           if (cls && !ALLOWED.has(cls)) {
             offenders.push(`${path.basename(file)}:${i + 1}  ${cls}`);
@@ -92,5 +99,19 @@ describe('plugin classes the host stylesheet may not contain', () => {
     expect(gatedArbitraryClass('sm:max-h-[calc(100vh-13rem)]')).toBe('max-h-[calc(100vh-13rem)]');
     expect(gatedArbitraryClass('text-[11px]')).toBeNull();
     expect(gatedArbitraryClass('flex')).toBeNull();
+  });
+
+  it('keeps a bracketed value whole through a function call', () => {
+    // The tokenizer used to split on parentheses and commas, which tore these
+    // two apart and let them through — and they are the shape most worth
+    // catching, since a value with a call in it is never in a host file.
+    const line = '<div className="grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)] max-h-[calc(100vh-13rem)]" />';
+    const found = [...line.matchAll(/[^\s"'`{}]+/g)]
+      .map(([t]) => gatedArbitraryClass(t))
+      .filter(Boolean);
+    expect(found).toEqual([
+      'grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)]',
+      'max-h-[calc(100vh-13rem)]',
+    ]);
   });
 });
