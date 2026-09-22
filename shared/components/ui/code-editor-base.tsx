@@ -8,7 +8,7 @@
 // wiring. Adding a feature here (or swapping the underlying engine entirely)
 // changes every tool at once instead of a dozen copies.
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, type CSSProperties } from 'react';
 import { EditorView, basicSetup } from 'codemirror';
 import { keymap, placeholder as cmPlaceholder } from '@codemirror/view';
 import { indentWithTab } from '@codemirror/commands';
@@ -23,6 +23,15 @@ export interface CodeSurfaceProps {
   onChange: (value: string) => void;
   placeholder?: string;
   className?: string;
+  /**
+   * Inline styles for the editor's outer box. A plugin bundle ships no CSS of
+   * its own and is styled by the host app's compiled Tailwind sheet, which
+   * never scans plugin source — so a sizing class written only in a plugin
+   * (`min-h-16`, `min-h-20`) may have no rule at all and leave the editor at
+   * the 180px default below. An inline style always lands, and beats the
+   * class besides.
+   */
+  style?: CSSProperties;
   // When provided, {{variables}} are highlighted/autocompleted in the editor
   // (used for the request body; omitted for scripts/tests).
   vars?: Record<string, string>;
@@ -43,7 +52,7 @@ interface Props extends CodeSurfaceProps {
 }
 
 export function CodeSurface({
-  value, onChange, placeholder, className, vars, lang, extraExtensions = [], readOnly = false, onBlur,
+  value, onChange, placeholder, className, style, vars, lang, extraExtensions = [], readOnly = false, onBlur,
 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
@@ -122,6 +131,7 @@ export function CodeSurface({
 
   return (
     <div
+      style={style}
       className={cn(
         // Công thức vòng focus đã gom về một chỗ trong app: `ring-[3px]` màu
         // `--acc-ring` (bí danh `ring-focus`), không offset. Trước là
