@@ -50,7 +50,11 @@ routing hint sat a line lower than the field it explains) and the arbitrary
 row out).
 
 Express sizing and layout values as an inline `style`, which no build step can
-drop. The complete check needs a real host build:
+drop. `ui/hostCssClasses.test.ts` (run by `npm test`) enforces that for
+arbitrary values, which no host-side safelist can cover — its allowlist holds
+the ones this plugin already uses, and is not meant to grow.
+
+The complete check needs a real host build:
 
 ```bash
 # in the host checkout
@@ -59,10 +63,15 @@ npm run build
 node scripts/check-host-classes.mjs ../developer-desktop-utils/dist/assets/*.css
 ```
 
-Run it against the **oldest host release you still support**. The host now
-safelists the common spacing/sizing scales for plugins
-(`src/styles/plugin-utilities.css` there), but a plugin installs into whatever
-host the user already has — and no safelist can ever cover arbitrary values.
+Run it against the **oldest host release you still support**. A plugin installs
+into whatever host the user already has.
+
+Two host-side files decide what resolves, and neither is a guarantee:
+`externalPluginClassnamesSafelist.ts` is a snapshot of plugin class names taken
+once when these tools left that repo — its own comment says it has "no
+automated re-sync", and the classes added here afterwards are precisely the
+ones that had no rule. `plugin-utilities.css` enumerates the common scales, so
+it cannot go stale, but it cannot cover arbitrary values either.
 
 ## Releasing
 
