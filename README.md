@@ -55,6 +55,24 @@ build step can drop.
 <div className="flex flex-col" style={{ height: '68vh', maxHeight: 'calc(100vh - 13rem)' }} />
 ```
 
+Arbitrary values are only the half of this that can be checked offline.
+**Any** class can be missing — `bottom-3`, `pl-1.5` and `border-bad/60` were,
+which is why the log pane's "Jump to latest" button sat on top of the first
+line instead of floating above the newest one, and why stderr lines lost their
+red rule. The complete check needs a real host build:
+
+```bash
+# in the host checkout
+npm run build
+# back here
+node scripts/check-host-classes.mjs ../developer-desktop-utils/dist/assets/*.css
+```
+
+Run it against the **oldest host release you still support**. The host now
+safelists the common spacing/sizing scales for plugins
+(`src/styles/plugin-utilities.css` there), but a plugin installs into whatever
+host the user already has.
+
 `ui/hostCssClasses.test.ts` enforces this for the sizing and layout prefixes,
 where a dropped rule means an unusable window rather than a cosmetic nudge:
 the container log dialog's box lost its height this way, grew with every line

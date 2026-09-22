@@ -14,6 +14,22 @@ import { MOD_KEY } from '@/lib/platform';
 import { cn } from '@/lib/utils';
 import type { ContainerStreamSubscription, LogLine } from './types';
 
+/**
+ * Sizes the host's compiled Tailwind sheet may not carry.
+ *
+ * A plugin bundle ships no CSS — it is styled entirely by the host app's
+ * stylesheet, which Tailwind generates by scanning the HOST's `src/**`. A
+ * class written only here therefore has a rule only if some host file happens
+ * to spell it identically. `pl-1.5`, `-ml-1.5` and `bottom-3` did not, so the
+ * stderr rule sat flush against its line and the "Jump to latest" button lost
+ * its offset and landed on top of the first log line. Inline styles cannot be
+ * dropped by any build step. (The host now safelists these scales for plugins
+ * — see `src/styles/plugin-utilities.css` there — but a plugin also has to
+ * render correctly on hosts released before that.)
+ */
+const STDERR_INSET = { paddingLeft: '0.375rem', marginLeft: '-0.375rem' } as const;
+const JUMP_BUTTON_OFFSET = { bottom: '0.75rem' } as const;
+
 const MAX_LINES = 5000;
 const TAIL_OPTIONS = ['100', '500', '1000', '5000', 'all'] as const;
 /** Incoming lines are painted in batches on this cadence instead of one
@@ -333,7 +349,7 @@ export function LogsPanel({ start, name }: {
             placeholder={`Search logs…  ${MOD_KEY}F`}
             aria-label="Search logs"
             aria-invalid={!!searchError}
-            className={cn('h-ctl w-full pl-7 pr-7 text-xs', searchError && 'border-bad focus-visible:border-bad focus-visible:ring-bad/30')}
+            className={cn('h-ctl w-full pl-7 pr-7 text-xs', searchError && 'border-bad focus-visible:ring-bad/30')}
           />
           {keyword && (
             <button
@@ -510,9 +526,12 @@ export function LogsPanel({ start, name }: {
               key={i}
               data-row={i}
               title={l.timestamp ?? undefined}
+              // The stderr rule's inset is inline: `pl-1.5`/`-ml-1.5` are not in
+              // the host's sheet (see the note at the top of this file).
+              style={l.stream === 'stderr' ? STDERR_INSET : undefined}
               className={cn(
                 'flex gap-2 rounded-sm px-1 -mx-1 hover:bg-acc/5',
-                l.stream === 'stderr' && 'border-l-2 border-bad/60 pl-1.5 -ml-1.5',
+                l.stream === 'stderr' && 'border-l-2 border-bad',
                 searchMode === 'highlight' && matchIndexes[activeMatch] === i && 'bg-acc/10',
               )}
             >
@@ -533,8 +552,9 @@ export function LogsPanel({ start, name }: {
           <button
             type="button"
             onClick={() => { setFollow(true); setAtBottom(true); scrollToBottom(); }}
+            style={JUMP_BUTTON_OFFSET}
             className={cn(
-              'absolute bottom-3 left-1/2 -translate-x-1/2 inline-flex items-center gap-1.5 rounded-full',
+              'absolute left-1/2 -translate-x-1/2 inline-flex items-center gap-1.5 rounded-full',
               'border border-acc/40 bg-card/95 px-3 py-1 text-[11px] font-medium shadow-lg backdrop-blur-xs',
               'animate-in fade-in-0 slide-in-from-bottom-1 duration-fast ease-out-soft hover:bg-acc/10',
             )}
