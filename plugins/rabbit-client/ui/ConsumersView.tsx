@@ -87,7 +87,7 @@ export function ConsumersView({ conn, refreshKey, onRefresh, prefill, detailQueu
         <Button variant="outline" size="sm" onClick={onRefresh}><RefreshCw className="h-3.5 w-3.5 mr-1.5" /> Refresh</Button>
       </div>
 
-      <div className="tool-scrollable px-5 py-5">
+      <div className="tool-scrollable px-5" style={{ paddingTop: '1.25rem', paddingBottom: '1.25rem' }}>
         <div className="mx-auto w-full max-w-3xl space-y-5">
           <StartConsumerForm conn={conn} queues={queues.data ?? []} sessions={sessions} prefill={prefill} onStarted={onOpenConsumer} />
 
@@ -260,7 +260,7 @@ function StartConsumerForm({ conn, queues, sessions, prefill, onStarted }: {
           {!echo && (
             <div>
               <Label className="text-xs">Reply payload</Label>
-              <TextEditor value={replyPayload} onChange={setReplyPayload} placeholder='{"status":"ok"}' className="mt-1 min-h-20" />
+              <TextEditor value={replyPayload} onChange={setReplyPayload} placeholder='{"status":"ok"}' className="mt-1" style={{ minHeight: '5rem' }} />
             </div>
           )}
           <div>
@@ -413,7 +413,7 @@ function MessageRow({ m, format }: { m: import('./types').ConsumedMessage; forma
         className="flex items-center gap-2 px-5 py-1.5 cursor-pointer hover:bg-bg-2/40"
       >
         {expanded ? <ChevronDown className="h-3.5 w-3.5 shrink-0 text-fg-mute" /> : <ChevronRight className="h-3.5 w-3.5 shrink-0 text-fg-mute" />}
-        <span className="text-[11px] font-mono text-fg-mute truncate max-w-[12rem] shrink-0" title={`${m.exchange ? m.exchange + ' · ' : ''}${m.routingKey || '—'}`}>
+        <span className="text-[11px] font-mono text-fg-mute truncate shrink-0" style={{ maxWidth: '12rem' }} title={`${m.exchange ? m.exchange + ' · ' : ''}${m.routingKey || '—'}`}>
           {m.exchange ? `${m.exchange}/` : ''}{m.routingKey || '—'}
         </span>
         {m.correlationId && <span className="text-[11px] font-mono text-acc/80 truncate max-w-[8rem] shrink-0" title={`correlation id: ${m.correlationId}`}>corr {m.correlationId}</span>}

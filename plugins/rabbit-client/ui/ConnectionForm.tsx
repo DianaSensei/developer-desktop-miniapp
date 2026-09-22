@@ -13,6 +13,13 @@ import { EMPTY_CONNECTION, type RabbitConnection } from './types';
 import { useRabbitApi } from './api_sdk';
 import { rabbitMgmt } from './api';
 
+/* Sizes here are inline, not `min-h-16`/`py-5`/`max-w-[12rem]`: a plugin bundle
+ * ships no CSS and is styled by the host app's compiled Tailwind sheet, which
+ * Tailwind generates by scanning the HOST's `src/**`. This repo is never
+ * scanned, so a class written only here has a rule only if some host file
+ * happens to spell it identically — these did not, and rendered as nothing.
+ * See `scripts/check-host-classes.mjs` and the README's "Styling" section. */
+
 interface ConnectionFormProps {
   initial?: RabbitConnection | null;
   onSave: (config: RabbitConnection) => Promise<void>;
@@ -338,7 +345,7 @@ export function ConnectionForm({ initial, onSave, onCancel }: ConnectionFormProp
             <Textarea
               id="rb-ca" value={form.tlsCaPem ?? ''}
               onChange={(e) => set('tlsCaPem', e.target.value || null)}
-              placeholder="-----BEGIN CERTIFICATE-----" className="mt-1 font-mono text-[11px] min-h-16"
+              placeholder="-----BEGIN CERTIFICATE-----" className="mt-1 font-mono text-[11px]" style={{ minHeight: '4rem' }}
             />
             <p className="text-[11px] text-fg-mute mt-1">For self-signed / private brokers (amqps). The proper alternative to disabling verification.</p>
           </div>
@@ -347,7 +354,7 @@ export function ConnectionForm({ initial, onSave, onCancel }: ConnectionFormProp
             <Textarea
               id="rb-p12" value={form.clientPkcs12B64 ?? ''}
               onChange={(e) => set('clientPkcs12B64', e.target.value || null)}
-              placeholder="MII… (base64 of a .p12/.pfx for mutual TLS)" className="mt-1 font-mono text-[11px] min-h-16"
+              placeholder="MII… (base64 of a .p12/.pfx for mutual TLS)" className="mt-1 font-mono text-[11px]" style={{ minHeight: '4rem' }}
             />
           </div>
           <div>

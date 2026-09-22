@@ -246,7 +246,7 @@ export function RpcView({ conn, prefill }: RpcViewProps) {
         />
       </div>
 
-      <div className="tool-scrollable px-5 py-5">
+      <div className="tool-scrollable px-5" style={{ paddingTop: '1.25rem', paddingBottom: '1.25rem' }}>
         <div className="mx-auto w-full max-w-2xl space-y-5">
           {/* Destination */}
           <div className="grid grid-cols-2 gap-3">
@@ -264,7 +264,7 @@ export function RpcView({ conn, prefill }: RpcViewProps) {
               />
             </div>
           </div>
-          <p className="-mt-2.5 text-[11px] text-fg-mute leading-relaxed">{routingHint}</p>
+          <p className="text-[11px] text-fg-mute leading-relaxed" style={{ marginTop: '-0.625rem' }}>{routingHint}</p>
 
           {/* Payload */}
           <div>
@@ -375,7 +375,7 @@ export function RpcView({ conn, prefill }: RpcViewProps) {
                 value={headersText}
                 onChange={(v) => { setHeadersText(v); reset(); }}
                 placeholder={'{"__TypeId__": "com.example.MyRequest"}'}
-                className="mt-1 min-h-16"
+                className="mt-1" style={{ minHeight: '4rem' }}
               />
             </div>
           </CollapsibleSection>
