@@ -93,10 +93,19 @@ Two guards, and they cover different halves:
   node scripts/check-host-classes.mjs ../developer-desktop-utils/dist/assets/*.css
   ```
 
-  Run it against the **oldest host release you still support**. The host now
-  safelists the common spacing/sizing scales for plugins
-  (`src/styles/plugin-utilities.css` there), but that only helps hosts built
-  from then on.
+  Run it against the **oldest host release you still support** — a plugin
+  installs into whatever host the user already has.
+
+  Two host-side files decide what resolves, and neither is a guarantee:
+
+  - `externalPluginClassnamesSafelist.ts` — a snapshot of plugin class names
+    extracted **once**, when these tools left that repo. Its own comment says
+    it has "no automated re-sync", and that is the whole story behind the
+    breakage above: the classes plugin code added *after* that snapshot are
+    exactly the ones with no rule. `max-h-64` was in it and `h-64` was not.
+  - `plugin-utilities.css` — enumerates the common scales rather than actual
+    usage, so it needs no plugin checkout and cannot go stale. It cannot cover
+    arbitrary values, which is why the guard above gates those.
 
 The same reasoning is why `shared/components/ui/code-editor-base.tsx` takes a
 `style` prop: a plugin had no other way to set an editor's height that
