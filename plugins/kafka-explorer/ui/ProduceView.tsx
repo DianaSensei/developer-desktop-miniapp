@@ -14,6 +14,13 @@ import { RecentSuggestions } from './RecentSuggestions';
 import { produceDraft } from './produceDraft';
 import type { TopicPrefill } from './useKafkaState';
 
+/* Sizes/offsets here are inline, not Tailwind classes: a plugin bundle ships no
+ * CSS and is styled by the host app's compiled Tailwind sheet, which Tailwind
+ * generates by scanning the HOST's `src/**`. This repo is never scanned, so a
+ * class written only here has a rule only if some host file happens to spell it
+ * identically — these did not, and rendered as nothing at all.
+ * See `scripts/check-host-classes.mjs` and the README's "Styling" section. */
+
 interface ProduceViewProps {
   brokerId: string;
   refreshKey: number;
@@ -77,7 +84,7 @@ export function ProduceView({ brokerId, refreshKey, onRefresh, prefill }: Produc
         <Button variant="outline" size="sm" busy={loading} onClick={onRefresh}><RefreshCw className="h-3.5 w-3.5 mr-1.5" /> Refresh</Button>
       </div>
 
-      <div className="tool-scrollable px-5 py-5">
+      <div className="tool-scrollable px-5" style={{ paddingTop: '1.25rem', paddingBottom: '1.25rem' }}>
         <div className="mx-auto w-full max-w-2xl space-y-5">
           <div>
             <Label className="text-xs">Topic</Label>

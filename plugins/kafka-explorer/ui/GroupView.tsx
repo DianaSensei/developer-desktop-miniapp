@@ -9,6 +9,13 @@ import { ViewHeader } from '@/components/ui/view-header';
 import { type GroupDetails, type Assignment } from './types';
 import { useKafkaApi } from './api_sdk';
 
+/* Sizes/offsets here are inline, not Tailwind classes: a plugin bundle ships no
+ * CSS and is styled by the host app's compiled Tailwind sheet, which Tailwind
+ * generates by scanning the HOST's `src/**`. This repo is never scanned, so a
+ * class written only here has a rule only if some host file happens to spell it
+ * identically — these did not, and rendered as nothing at all.
+ * See `scripts/check-host-classes.mjs` and the README's "Styling" section. */
+
 interface GroupViewProps {
   brokerId: string;
   groupId: string;
@@ -91,7 +98,7 @@ export function GroupView({ brokerId, groupId, refreshKey, onRefresh, onSelectTo
         )}
 
         {!loading && error && (
-          <Callout tone="error" className="m-4">{error}</Callout>
+          <div style={{ margin: '1rem' }}><Callout tone="error">{error}</Callout></div>
         )}
 
         {!loading && !error && data && (

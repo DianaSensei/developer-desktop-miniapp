@@ -22,6 +22,13 @@ import { RecentSuggestions } from './RecentSuggestions';
 import { CodeViewer } from '@/design-system';
 import type { TopicPrefill } from './useKafkaState';
 
+/* Sizes/offsets here are inline, not Tailwind classes: a plugin bundle ships no
+ * CSS and is styled by the host app's compiled Tailwind sheet, which Tailwind
+ * generates by scanning the HOST's `src/**`. This repo is never scanned, so a
+ * class written only here has a rule only if some host file happens to spell it
+ * identically — these did not, and rendered as nothing at all.
+ * See `scripts/check-host-classes.mjs` and the README's "Styling" section. */
+
 type ValueFormat = 'json' | 'plain' | 'hex';
 
 interface ConsumeViewProps {
@@ -58,7 +65,7 @@ export function ConsumeView({ brokerId, refreshKey, onRefresh, prefill, detailTo
         <Button variant="outline" size="sm" onClick={onRefresh}><RefreshCw className="h-3.5 w-3.5 mr-1.5" /> Refresh</Button>
       </div>
 
-      <div className="tool-scrollable px-5 py-5">
+      <div className="tool-scrollable px-5" style={{ paddingTop: '1.25rem', paddingBottom: '1.25rem' }}>
         <div className="mx-auto w-full max-w-3xl space-y-5">
           <StartConsumerForm
             brokerId={brokerId}
@@ -362,7 +369,7 @@ function MessageRow({ m, format }: { m: KafkaConsumedMessage; format: ValueForma
             {format === 'hex' ? (
               <pre className="text-xs font-mono whitespace-pre-wrap break-words max-h-96 overflow-y-auto rounded-md border bg-bg px-2.5 py-2">{formatValue(m, format)}</pre>
             ) : (
-              <div className="flex h-64 rounded-md border bg-bg overflow-hidden">
+              <div className="flex rounded-md border bg-bg overflow-hidden" style={{ height: '16rem' }}>
                 <CodeViewer value={formatValue(m, format)} language={format === 'json' ? 'json' : 'text'} />
               </div>
             )}
