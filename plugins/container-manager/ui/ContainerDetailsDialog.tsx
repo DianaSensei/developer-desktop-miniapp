@@ -63,7 +63,7 @@ export function ContainerDetailsDialog({ open, onOpenChange, connection, contain
         <DialogHeader>
           <DialogTitle className="font-mono text-sm">{title}</DialogTitle>
         </DialogHeader>
-        <div className="max-h-[70vh] overflow-y-auto pr-1 space-y-4">
+        <div className="overflow-y-auto pr-1 space-y-4" style={{ maxHeight: '70vh' }}>
           {loading && <LoadingRow />}
           {error && <Callout tone="error">{error}</Callout>}
           {details && !loading && (
