@@ -42,11 +42,109 @@ const FLUSH_MS = 120;
 const BOTTOM_SLACK_PX = 24;
 
 type StreamFilter = 'all' | 'stdout' | 'stderr';
-/** Filter hides non-matching lines; highlight keeps them and steps between
- *  matches. Both are useful and neither replaces the other: filtering answers
- *  "how often does this happen", highlighting answers "what happened around
- *  it". */
-type SearchMode = 'filter' | 'highlight';
+
+/**
+ * How much of the log around each match to keep on screen — `grep -C`, not a
+ * results list.
+ *
+ * A match almost never explains itself: the stack trace, the request that
+ * caused it and the retry after it are on the neighbouring lines, and the old
+ * two-way Filter/Highlight toggle made you pick between seeing only the hits
+ * and seeing the whole buffer with nothing in between. `'0'` is the old filter,
+ * `'all'` the old highlight, and the middle values are what you actually want
+ * most of the time.
+ */
+const CONTEXT_OPTIONS = [
+  { value: '0', label: 'Matches only' },
+  { value: '3', label: '± 3 lines' },
+  { value: '10', label: '± 10 lines' },
+  { value: 'all', label: 'Full log' },
+] as const;
+type ContextSetting = (typeof CONTEXT_OPTIONS)[number]['value'];
+
+/** A rendered row: either a log line (carrying its index in the unfiltered
+ *  view, which is what scrolling and match navigation address) or the marker
+ *  standing in for a run of lines context left out. */
+export type LogRow =
+  | { kind: 'line'; line: LogLine; index: number; match: boolean }
+  | { kind: 'gap'; index: number; hidden: number };
+
+export type LogLevel = 'error' | 'warn' | 'debug' | null;
+
+/**
+ * Best-effort severity of a line, read from the text — deliberately NOT from
+ * the stream it arrived on.
+ *
+ * stderr is a *channel*, not a severity: the OTel Collector, Go's `log`,
+ * Python's default `StreamHandler` and most JVM console appenders send every
+ * level there, so painting stderr red made a healthy container look like it
+ * was on fire. The stream still gets a (neutral) rule down the left; colour
+ * now follows what the line actually says.
+ *
+ * Only the first ~120 characters are examined: enough for `<ts> LEVEL msg`,
+ * logfmt and JSON-with-`level`-near-the-front, and short enough that a 4 KB
+ * line of payload can't turn the scan into the bottleneck — or trip the match
+ * on the word "error" inside its body.
+ */
+export function detectLevel(message: string): LogLevel {
+  const head = message.length > 120 ? message.slice(0, 120) : message;
+  if (/(^|[^a-z])(error|erro|fatal|panic|critical|crit|emerg|alert|severe)([^a-z]|$)/i.test(head)) return 'error';
+  if (/(^|[^a-z])(warn|warning)([^a-z]|$)/i.test(head)) return 'warn';
+  if (/(^|[^a-z])(debug|trace|verbose)([^a-z]|$)/i.test(head)) return 'debug';
+  return null;
+}
+
+/**
+ * Turns the (stream-filtered) buffer into the rows to render.
+ *
+ * With no query, or `context: 'all'`, every line is a row. Otherwise each
+ * matching line keeps `n` neighbours on either side, overlapping windows merge,
+ * and every skipped run becomes one `gap` row — so the result reads as the log
+ * with holes in it rather than as a list of hits torn out of it.
+ */
+export function buildRows(
+  lines: LogLine[],
+  test: ((s: string) => boolean) | null,
+  context: ContextSetting,
+): { rows: LogRow[]; matchIndexes: number[] } {
+  if (!test) return { rows: lines.map((line, index) => ({ kind: 'line', line, index, match: false })), matchIndexes: [] };
+
+  const matchIndexes: number[] = [];
+  lines.forEach((l, i) => { if (test(l.message)) matchIndexes.push(i); });
+
+  if (context === 'all') {
+    const matched = new Set(matchIndexes);
+    return {
+      rows: lines.map((line, index) => ({ kind: 'line', line, index, match: matched.has(index) })),
+      matchIndexes,
+    };
+  }
+
+  // Nothing matched: a lone "5,000 lines hidden" marker would be a worse way
+  // of saying so than the panel's own empty state.
+  if (matchIndexes.length === 0) return { rows: [], matchIndexes };
+
+  const n = Number(context);
+  const keep = new Uint8Array(lines.length);
+  for (const i of matchIndexes) {
+    for (let j = Math.max(0, i - n); j <= Math.min(lines.length - 1, i + n); j++) keep[j] = 1;
+  }
+
+  const matched = new Set(matchIndexes);
+  const rows: LogRow[] = [];
+  let i = 0;
+  while (i < lines.length) {
+    if (keep[i]) {
+      rows.push({ kind: 'line', line: lines[i], index: i, match: matched.has(i) });
+      i++;
+      continue;
+    }
+    const from = i;
+    while (i < lines.length && !keep[i]) i++;
+    rows.push({ kind: 'gap', index: from, hidden: i - from });
+  }
+  return { rows, matchIndexes };
+}
 
 function toEpochSeconds(ms: number | null): number {
   return ms === null ? 0 : Math.floor(ms / 1000);
@@ -146,7 +244,7 @@ export function LogsPanel({ start, name }: {
   const [keyword, setKeyword] = useState('');
   const [regex, setRegex] = useState(false);
   const [caseSensitive, setCaseSensitive] = useState(false);
-  const [searchMode, setSearchMode] = useState<SearchMode>('filter');
+  const [context, setContext] = useState<ContextSetting>('3');
   const [streamFilter, setStreamFilter] = useState<StreamFilter>('all');
   const [wrap, setWrap] = useState(true);
 
@@ -157,6 +255,13 @@ export function LogsPanel({ start, name }: {
   const [truncated, setTruncated] = useState(false);
   const [atBottom, setAtBottom] = useState(true);
   const [activeMatch, setActiveMatch] = useState(0);
+  /** A line index the view should scroll to once the rows that contain it have
+   *  rendered — set by opening a gap, so the position you were reading stays
+   *  under the cursor instead of the view jumping to the top of the full log. */
+  const [pendingScroll, setPendingScroll] = useState<number | null>(null);
+  /** The line that was scrolled to last, kept marked so it is findable again
+   *  after the surrounding hundreds of lines appear around it. */
+  const [focusIndex, setFocusIndex] = useState<number | null>(null);
 
   // Dòng log đến trong lúc TẠM DỪNG. Bản trước vứt thẳng chúng đi ("stop
   // growing the view"), nên khoảng thời gian người dùng dừng lại để ĐỌC chính
@@ -281,37 +386,62 @@ export function LogsPanel({ start, name }: {
     [lines, streamFilter],
   );
 
-  /** Rows actually rendered, plus which of them match — filter mode drops the
-   *  rest, highlight mode keeps them and only marks the matches. */
-  const { rows, matchIndexes } = useMemo(() => {
-    if (!matcher.test) return { rows: streamFiltered, matchIndexes: [] as number[] };
-    if (searchMode === 'filter') {
-      const kept = streamFiltered.filter((l) => matcher.test!(l.message));
-      return { rows: kept, matchIndexes: kept.map((_, i) => i) };
-    }
-    const idx: number[] = [];
-    streamFiltered.forEach((l, i) => { if (matcher.test!(l.message)) idx.push(i); });
-    return { rows: streamFiltered, matchIndexes: idx };
-  }, [streamFiltered, matcher, searchMode]);
+  const { rows, matchIndexes } = useMemo(
+    () => buildRows(streamFiltered, matcher.test, context),
+    [streamFiltered, matcher, context],
+  );
 
   // Keep the active match in range as lines stream in or the query changes.
-  useEffect(() => { setActiveMatch(0); }, [keyword, regex, caseSensitive, searchMode, streamFilter]);
+  useEffect(() => { setActiveMatch(0); }, [keyword, regex, caseSensitive, streamFilter]);
 
+  /** Scroll a line index into the middle of the view. Match navigation and
+   *  opening a gap both land here, so both leave the viewport in the same
+   *  place: the line centred, with its neighbours above and below it. */
+  const scrollToLine = useCallback((index: number) => {
+    const el = scrollRef.current?.querySelector<HTMLElement>(`[data-row="${index}"]`);
+    if (!el) return false;
+    el.scrollIntoView({ block: 'center' });
+    setFocusIndex(index);
+    return true;
+  }, []);
+
+  // Opening a gap swaps in hundreds of rows; the target only exists to scroll
+  // to after that render, hence the deferral through `pendingScroll`.
+  useEffect(() => {
+    if (pendingScroll === null) return;
+    scrollToLine(pendingScroll);
+    setPendingScroll(null);
+  }, [pendingScroll, rows, scrollToLine]);
+
+  /** Step between matches — works in every context setting now: with context
+   *  the neighbours are already on screen, and with `Full log` this is the
+   *  only way to get from one hit to the next. */
   const stepMatch = (delta: number) => {
-    // Only meaningful while every line is on screen — in filter mode the rows
-    // ARE the matches, so stepping would just scroll for no reason.
-    if (searchMode !== 'highlight' || matchIndexes.length === 0) return;
+    if (matchIndexes.length === 0) return;
     const next = (activeMatch + delta + matchIndexes.length) % matchIndexes.length;
     setActiveMatch(next);
     setFollow(false);
-    const el = scrollRef.current?.querySelector<HTMLElement>(`[data-row="${matchIndexes[next]}"]`);
-    el?.scrollIntoView({ block: 'center' });
+    scrollToLine(matchIndexes[next]);
+  };
+
+  /** "Show the hidden lines" — reveal the whole buffer but stay parked where
+   *  you were reading, which is the point of asking for them. */
+  const openGap = (index: number) => {
+    setFollow(false);
+    setContext('all');
+    setPendingScroll(index);
   };
 
   /** Exactly what is on screen, with the timestamps if they're shown — a copy
-   *  that silently dropped the filters would be worse than useless. */
+   *  that silently dropped the filters would be worse than useless. Gaps are
+   *  written out as the `grep`-style separator rather than closed over in
+   *  silence, so an exported excerpt can't read as contiguous log. */
   const exportText = useCallback(
-    () => rows.map((l) => (l.timestamp ? `${l.timestamp} ${l.message}` : l.message)).join('\n'),
+    () => rows
+      .map((r) => (r.kind === 'gap'
+        ? `--- ${r.hidden.toLocaleString()} line(s) not shown ---`
+        : r.line.timestamp ? `${r.line.timestamp} ${r.line.message}` : r.line.message))
+      .join('\n'),
     [rows],
   );
 
@@ -374,17 +504,22 @@ export function LogsPanel({ start, name }: {
         >
           <CaseSensitive className="h-3.5 w-3.5" />
         </LogToggleButton>
-        <LogToggleButton
-          active={searchMode === 'highlight'}
-          onClick={() => setSearchMode((m) => (m === 'filter' ? 'highlight' : 'filter'))}
-          title={searchMode === 'filter'
-            ? 'Filtering to matching lines — click to keep every line and just highlight matches'
-            : 'Highlighting matches in place — click to hide non-matching lines'}
-        >
-          {searchMode === 'filter' ? 'Filter' : 'Highlight'}
-        </LogToggleButton>
+        <Select value={context} onValueChange={(v) => setContext(v as ContextSetting)}>
+          <SelectTrigger
+            className="h-ctl w-[110px] shrink-0 px-2 text-[11px]"
+            title="How much log to keep around each match"
+            aria-label="How much log to keep around each match"
+          >
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {CONTEXT_OPTIONS.map((o) => (
+              <SelectItem key={o.value} value={o.value} className="text-xs">{o.label}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
 
-        {matchIndexes.length > 0 && keyword && searchMode === 'highlight' && (
+        {matchIndexes.length > 0 && keyword && (
           <span className="inline-flex shrink-0 items-center gap-0.5">
             <IconStep title="Previous match" onClick={() => stepMatch(-1)}><ChevronUp className="h-3.5 w-3.5" /></IconStep>
             <span className="px-1 text-[11px] tabular-nums text-fg-mute">
@@ -485,9 +620,8 @@ export function LogsPanel({ start, name }: {
           </span>
         ) : keyword ? (
           <span>
-            {searchMode === 'filter'
-              ? `${rows.length.toLocaleString()} of ${streamFiltered.length.toLocaleString()} lines match`
-              : `${matchIndexes.length.toLocaleString()} matching line(s)`}
+            {`${matchIndexes.length.toLocaleString()} of ${streamFiltered.length.toLocaleString()} lines match`}
+            {context !== 'all' && matchIndexes.length > 0 && context !== '0' && ` · ± ${context} line(s) of context`}
           </span>
         ) : (
           <span>{streamFiltered.length.toLocaleString()} line(s)</span>
@@ -521,28 +655,56 @@ export function LogsPanel({ start, name }: {
                     : 'No output yet — new lines appear here as the container writes them.'}
             </p>
           )}
-          {rows.map((l, i) => (
-            <div
-              key={i}
-              data-row={i}
-              title={l.timestamp ?? undefined}
-              // The stderr rule's inset is inline: `pl-1.5`/`-ml-1.5` are not in
-              // the host's sheet (see the note at the top of this file).
-              style={l.stream === 'stderr' ? STDERR_INSET : undefined}
-              className={cn(
-                'flex gap-2 rounded-sm px-1 -mx-1 hover:bg-acc/5',
-                l.stream === 'stderr' && 'border-l-2 border-bad',
-                searchMode === 'highlight' && matchIndexes[activeMatch] === i && 'bg-acc/10',
-              )}
-            >
-              {l.timestamp && (
-                <span className="shrink-0 select-none tabular-nums text-fg-faint">{formatTimestamp(l.timestamp)}</span>
-              )}
-              <span className={cn('min-w-0', wrap ? 'whitespace-pre-wrap break-all' : 'whitespace-pre', l.stream === 'stderr' && 'text-bad')}>
-                {highlightMatch(l.message, matcher.ranges)}
-              </span>
-            </div>
-          ))}
+          {rows.map((r) => {
+            if (r.kind === 'gap') {
+              return (
+                <button
+                  key={`gap-${r.index}`}
+                  type="button"
+                  onClick={() => openGap(r.index)}
+                  title="Show the whole log from here — the view stays on this spot"
+                  className="my-1 flex w-full items-center gap-2 border-t border-dashed border-line py-0.5 text-[11px] text-fg-mute transition-colors hover:text-acc"
+                >
+                  ⋯ {r.hidden.toLocaleString()} line(s) hidden — click to read them
+                </button>
+              );
+            }
+            const { line: l, index } = r;
+            const level = detectLevel(l.message);
+            return (
+              <div
+                key={index}
+                data-row={index}
+                title={l.timestamp ?? undefined}
+                // The stderr rule's inset is inline: `pl-1.5`/`-ml-1.5` are not in
+                // the host's sheet (see the note at the top of this file).
+                style={l.stream === 'stderr' ? STDERR_INSET : undefined}
+                className={cn(
+                  'flex gap-2 rounded-sm px-1 -mx-1 hover:bg-acc/5',
+                  // Neutral, not red: which stream a line came out on says
+                  // nothing about whether it is bad news — see `detectLevel`.
+                  l.stream === 'stderr' && 'border-l-2 border-fg-mute/70',
+                  matchIndexes[activeMatch] === index && 'bg-acc/10',
+                  focusIndex === index && 'ring-1 ring-acc',
+                )}
+              >
+                {l.timestamp && (
+                  <span className="shrink-0 select-none tabular-nums text-fg-faint">{formatTimestamp(l.timestamp)}</span>
+                )}
+                <span
+                  className={cn(
+                    'min-w-0',
+                    wrap ? 'whitespace-pre-wrap break-all' : 'whitespace-pre',
+                    level === 'error' && 'text-bad',
+                    level === 'warn' && 'text-warn',
+                    level === 'debug' && 'text-fg-mute',
+                  )}
+                >
+                  {highlightMatch(l.message, matcher.ranges)}
+                </span>
+              </div>
+            );
+          })}
         </div>
 
         {/* Only offered when it does something: the view is scrolled away from
